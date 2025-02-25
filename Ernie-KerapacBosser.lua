@@ -151,7 +151,7 @@ function stopScript()
 end
 
 function eatFood()
-    if API.GetHPrecent() < 60 and Inventory:ContainsAny(foodItems) and eatFoodAB ~= nil then
+    if API.GetHPrecent() < 70 and Inventory:ContainsAny(foodItems) and eatFoodAB ~= nil then
         print("Yum yum")
         API.DoAction_Ability_Direct(eatFoodAB, 1, API.OFF_ACT_GeneralInterface_route)
         sleepTickRandom(1)
