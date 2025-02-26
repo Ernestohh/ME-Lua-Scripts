@@ -1,4 +1,4 @@
-local version = "1.2"
+local version = "1.3"
 local API = require("api")
 API.SetDrawLogs(true)
 
@@ -61,6 +61,7 @@ local isTimeToLoot = false
 local isPrepared = false
 local isInArena = false
 local isLooted = false
+local isPortalUsed = false
 local playerPosition = nil
 local selectedPrayerType = nil
 local selectedPassive = nil
@@ -393,6 +394,7 @@ function handleBossReset()
     isPrepared = false
     isInArena = false
     isLooted = false
+    isPortalUsed = false
 end
 
 function checkStartLocation()
@@ -426,13 +428,17 @@ function prepareForBattle()
         print("No super restores in inventory")
         stopScript()
     end
+    isPrepared = true
+end
+
+function goThroughPortal()
     print("Go through portal")
     API.DoAction_Object1(0x39, API.OFF_ACT_GeneralObject_route0, { 121019 }, 50)
     API.WaitUntilMovingEnds(20, 4)
     sleepTickRandom(2)
     local colosseum = API.GetAllObjArray1({120046}, 30, {12})
     if #colosseum > 0 then
-        isPrepared = true
+        isPortalUsed = true
         print("At Colosseum")
     end
 end
@@ -535,7 +541,10 @@ while (API.Read_LoopyLoop()) do
             if isInWarsRetreat and not isPrepared then
                 prepareForBattle()
             end
-            if isPrepared and not isInArena then
+            if isPrepared and not isPortalUsed then
+               goThroughPortal() 
+            end
+            if isPortalUsed and not isInArena then
                 goThroughGate() 
             end
             if isInArena then
