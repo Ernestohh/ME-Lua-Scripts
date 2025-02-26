@@ -1,4 +1,4 @@
-local version = "1.4"
+local version = "1.5"
 local API = require("api")
 API.SetDrawLogs(true)
 
@@ -368,11 +368,12 @@ function handleBossDeath()
 end
 
 function handleBossLoot()
-    local lootPiles = API.GetAllObjArray1({51804}, 20, {3})
+    local guaranteedDrop = {51804, 51805}
+    local lootPiles = API.GetAllObjArray1(guaranteedDrop, 20, {3})
     if #lootPiles > 0 then
         if not API.LootWindowOpen_2() then 
             print("Opening loot window")
-            API.KeyboardPress("/", 0, 50)
+            API.DoAction_G_Items1(0x2d, guaranteedDrop, 30)
             sleepTickRandom(1)
         end
         if API.LootWindowOpen_2() and (API.LootWindow_GetData()[1].itemid1 > 0) then 
