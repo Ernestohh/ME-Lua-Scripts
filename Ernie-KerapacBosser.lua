@@ -1,4 +1,4 @@
-local version = "1"
+local version = "1.1"
 local API = require("api")
 API.SetDrawLogs(true)
 
@@ -40,7 +40,7 @@ local passiveBuffs = {
 }
 
 local foodItems = { "Sailfish", "Rocktail", "Sailfish soup", "Desert sole", "Ghostly sole", "Beltfish", "Catfish" }
-local superRestoreItems = { "Super restore potion (4)", "Super restore potion (3)", "Super restore potion (2)", "Super restore potion (1)", "Super restore flask (6)", "Super restore flask (5)", "Super restore flask (4)", "Super restore flask (3)", "Super restore flask (2)", "Super restore flask (1)" }
+local superRestoreItems = { "Super restores (4)", "Super restores (3)", "Super restores (2)", "Super restores (1)", "Super restore flask (6)", "Super restore flask (5)", "Super restore flask (4)", "Super restore flask (3)", "Super restore flask (2)", "Super restore flask (1)" }
 
 local bossStateEnum = {
     BASIC_ATTACK = { name = "BASIC_ATTACK", animations = { 34192 } },
