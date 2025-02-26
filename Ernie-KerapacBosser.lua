@@ -1,4 +1,4 @@
-local version = "1.1"
+local version = "1"
 local API = require("api")
 API.SetDrawLogs(true)
 
@@ -40,7 +40,7 @@ local passiveBuffs = {
 }
 
 local foodItems = { "Sailfish", "Rocktail", "Sailfish soup", "Desert sole", "Ghostly sole", "Beltfish", "Catfish" }
-local superRestoreItems = { "Super restores (4)", "Super restores (3)", "Super restores (2)", "Super restores (1)", "Super restore flask (6)", "Super restore flask (5)", "Super restore flask (4)", "Super restore flask (3)", "Super restore flask (2)", "Super restore flask (1)" }
+local superRestoreItems = { "Super restore potion (4)", "Super restore potion (3)", "Super restore potion (2)", "Super restore potion (1)", "Super restore flask (6)", "Super restore flask (5)", "Super restore flask (4)", "Super restore flask (3)", "Super restore flask (2)", "Super restore flask (1)" }
 
 local bossStateEnum = {
     BASIC_ATTACK = { name = "BASIC_ATTACK", animations = { 34192 } },
@@ -429,7 +429,9 @@ function prepareForBattle()
     print("Go through portal")
     API.DoAction_Object1(0x39, API.OFF_ACT_GeneralObject_route0, { 121019 }, 50)
     API.WaitUntilMovingEnds(20, 4)
-    if API.FindObject_string({ "Colosseum gateway" }) then
+    sleepTickRandom(2)
+    local colosseum = API.GetAllObjArray1({120046}, 30, {12})
+    if #colosseum > 0 then
         isPrepared = true
         print("At Colosseum")
     end
@@ -441,7 +443,8 @@ function goThroughGate()
     sleepTickRandom(2)
     API.DoAction_Interface(0x24, 0xffffffff, 1, 1591, 60, -1, API.OFF_ACT_GeneralInterface_route)
     sleepTickRandom(3)
-    if API.FindObject_string({ "Gate" }) then
+    local gate = API.GetAllObjArray1({120047}, 30, {12})
+    if #gate > 0 then
         isInArena = true
         print("In Colosseum")
     end
@@ -475,6 +478,51 @@ function checkKerapacExists()
     end
 end
 
+function subtractVectors(v1, v2)
+    return FFPOINT.new(v1.x - v2.x, v1.y - v2.y, v1.z - v2.z)
+end
+
+function normalizeVector(v)
+    local length = math.sqrt(v.x * v.x + v.y * v.y + v.z * v.z)
+    return FFPOINT.new(v.x / length, v.y / length, v.z / length)
+end
+
+local bolts = {{9216,28071}}
+local lightningBolts = API.GetAllObjArray1(bolts, 30, {1})
+function dodgeLightning()
+    if lightningBolts ~= nil then
+        local boltPreviousPosition = nil
+        local normalizedDirectionVector = nil
+        for i = 1, #lightningBolts do
+            local bolt = lightningBolts[i]
+            if bolt.Distance < 7 then
+                boltPreviousPosition = bolt.Tile_XYZ
+                sleepTickRandom(2)
+                normalizedDirectionVector = normalizeVector(subtractVectors(boltPreviousPosition, bolt.Tile_XYZ))
+            end
+        end
+        if normalizedDirectionVector ~= nil then
+            if normalizedDirectionVector.x > 0 then
+              print("Moving right")
+            elseif normalizedDirectionVector.x < 0 then
+                print("Moving left")
+            end
+        
+            if normalizedDirectionVector.y > 0 then
+                print("Moving up")
+            elseif normalizedDirectionVector.y < 0 then
+                print("Moving down")
+            end
+        
+            if normalizedDirectionVector.z > 0 then
+                print("Moving forward")
+            elseif normalizedDirectionVector.z < 0 then
+                print("Moving backward")
+            end
+        end
+    end
+end
+
 API.logWarn("Started Ernie's Kerapac Bosser " .. version)
 API.Write_LoopyLoop(true)
 while (API.Read_LoopyLoop()) do
@@ -498,6 +546,7 @@ while (API.Read_LoopyLoop()) do
             enablePassivePrayer()
             eatFood()
             drinkRestore()
+            dodgeLightning()
             playerDied()
             handleStateChange(getKerapacAnimation())
             handleBossDeath()
