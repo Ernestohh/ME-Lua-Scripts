@@ -1,4 +1,4 @@
-local version = "1.3"
+local version = "1.4"
 local API = require("api")
 API.SetDrawLogs(true)
 
@@ -371,11 +371,12 @@ function handleBossLoot()
     local lootPiles = API.GetAllObjArray1({51804}, 20, {3})
     if #lootPiles > 0 then
         if not API.LootWindowOpen_2() then 
+            print("Opening loot window")
             API.KeyboardPress("/", 0, 50)
             sleepTickRandom(1)
         end
         if API.LootWindowOpen_2() and (API.LootWindow_GetData()[1].itemid1 > 0) then 
-            print("looting")
+            print("Looting")
             sleepTickRandom(3)
             API.DoAction_LootAll_Button()
             isLooted = true
