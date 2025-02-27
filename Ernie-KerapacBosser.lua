@@ -1,4 +1,4 @@
-local version = "2.0"
+local version = "3.0"
 local API = require("api")
 API.SetDrawLogs(true)
 
@@ -36,24 +36,39 @@ local passiveBuffs = {
     Piety = { name = "Piety", buffId = 25973, AB = API.GetABs_name("Piety"), type = prayerType.Prayers.name },
     Rigour = { name = "Rigour", buffId = 25982, AB = API.GetABs_name("Rigour"), type = prayerType.Prayers.name },
     Augury = { name = "Augury", buffId = 25974, AB = API.GetABs_name("Augury"), type = prayerType.Prayers.name },
-    Sanctity = { name = "Sanctity", buffId = 30925, AB = API.GetABs_name("Sanctity"), type = prayerType.Prayers.name }
+    Sanctity = { name = "Sanctity", buffId = 30925, AB = API.GetABs_name("Sanctity"), type = prayerType.Prayers.name },
+    None = {name = "None", buffId = nil, AB = nil, type = nil} 
 }
 
-local foodItems = { "Sailfish", "Rocktail", "Sailfish soup", "Desert sole", "Ghostly sole", "Beltfish", "Catfish" }
-local superRestoreItems = { "Super restore (4)", "Super restore (3)", "Super restore (2)", "Super restore (1)", "Super restore flask (6)", "Super restore flask (5)", "Super restore flask (4)", "Super restore flask (3)", "Super restore flask (2)", "Super restore flask (1)" }
-local overloadItems = {
-"Overload (4)", "Overload (3)", "Overload (2)", "Overload (1)",
-"Overload Flask (6)", "Overload Flask (5)", "Overload Flask (4)", "Overload Flask (3)", "Overload Flask (2)", "Overload Flask (1)",
-"Holy overload (6)", "Holy overload (5)", "Holy overload (4)", "Holy overload (3)", "Holy overload (2)", "Holy overload (1)", 
-"Searing overload (6)", "Searing overload (5)", "Searing overload (4)", "Searing overload (3)", "Searing overload (2)", "Searing overload (1)",
-"Overload salve (6)", "Overload salve (5)", "Overload salve (4)", "Overload salve (3)", "Overload salve (2)", "Overload salve (1)",     
-"Aggroverload (6)", "Aggroverload (5)", "Aggroverload (4)", "Aggroverload (3)", "Aggroverload (2)", "Aggroverload (1)",
-"Holy aggroverload (6)", "Holy aggroverload (5)", "Holy aggroverload (4)", "Holy aggroverload (3)", "Holy aggroverload (2)", "Holy aggroverload (1)",
-"Supreme overload salve (6)", "Supreme overload salve (5)", "Supreme overload salve (4)", "Supreme overload salve (3)", "Supreme overload salve (2)", "Supreme overload salve (1)",
-"Elder overload potion (6)", "Elder overload potion (5)", "Elder overload potion (4)", "Elder overload potion (3)", "Elder overload potion (2)", "Elder overload potion (1)",
-"Elder overload salve (6)", "Elder overload salve (5)", "Elder overload salve (4)", "Elder overload salve (3)", "Elder overload salve (2)", "Elder overload salve (1)"
-}
-local weaponPoisonItems = {}
+local foodItems={"Lobster","Swordfish","Desert sole","Catfish","Monkfish","Beltfish","Ghostly sole","Cooked eeligator","Shark","Sea turtle","Great white shark","Cavefish","Manta ray","Rocktail","Tiger shark","Sailfish","Green blubber jellyfish","Blue blubber jellyfish","2/3 green blubber jellyfish","2/3 blue blubber jellyfish","1/3 green blubber jellyfish","1/3 blue blubber jellyfish","Potato with cheese","Tuna potato","Baron shark","Juju gumbo","Great maki","Great gunkan","Rocktail soup","Sailfish soup","Fury shark","Primal feast"}
+local prayerRestoreItems={"Super restore (4)","Super restore (3)","Super restore (2)","Super restore (1)","Super restore flask (6)","Super restore flask (5)","Super restore flask (4)","Super restore flask (3)","Super restore flask (2)","Super restore flask (1)","Prayer potion (1)","Prayer potion (2)","Prayer potion (3)","Prayer potion (4)","Prayer flask (1)","Prayer flask (2)","Prayer flask (3)","Prayer flask (4)","Prayer flask (5)","Prayer flask (6)","Super prayer (1)","Super prayer (2)","Super prayer (3)","Super prayer (4)","Super prayer flask (1)","Super prayer flask (2)","Super prayer flask (3)","Super prayer flask (4)","Super prayer flask (5)","Super prayer flask (6)","Extreme prayer (1)","Extreme prayer (2)","Extreme prayer (3)","Extreme prayer (4)","Extreme prayer flask (1)","Extreme prayer flask (2)","Extreme prayer flask (3)","Extreme prayer flask (4)","Extreme prayer flask (5)","Extreme prayer flask (6)"}
+local overloadItems={"Overload (4)","Overload (3)","Overload (2)","Overload (1)","Overload Flask (6)","Overload Flask (5)","Overload Flask (4)","Overload Flask (3)","Overload Flask (2)","Overload Flask (1)","Holy overload (6)","Holy overload (5)","Holy overload (4)","Holy overload (3)","Holy overload (2)","Holy overload (1)","Searing overload (6)","Searing overload (5)","Searing overload (4)","Searing overload (3)","Searing overload (2)","Searing overload (1)","Overload salve (6)","Overload salve (5)","Overload salve (4)","Overload salve (3)","Overload salve (2)","Overload salve (1)","Aggroverload (6)","Aggroverload (5)","Aggroverload (4)","Aggroverload (3)","Aggroverload (2)","Aggroverload (1)","Holy aggroverload (6)","Holy aggroverload (5)","Holy aggroverload (4)","Holy aggroverload (3)","Holy aggroverload (2)","Holy aggroverload (1)","Supreme overload salve (6)","Supreme overload salve (5)","Supreme overload salve (4)","Supreme overload salve (3)","Supreme overload salve (2)","Supreme overload salve (1)","Elder overload potion (6)","Elder overload potion (5)","Elder overload potion (4)","Elder overload potion (3)","Elder overload potion (2)","Elder overload potion (1)","Elder overload salve (6)","Elder overload salve (5)","Elder overload salve (4)","Elder overload salve (3)","Elder overload salve (2)","Elder overload salve (1)","Supreme overload potion (1)","Supreme overload potion (2)","Supreme overload potion (3)","Supreme overload potion (4)","Supreme overload potion (5)","Supreme overload potion (6)"}
+local weaponPoisonItems={"Weapon poison (1)","Weapon poison (2)","Weapon poison (3)","Weapon poison (4)","Weapon poison+ (1)","Weapon poison+ (2)","Weapon poison+ (3)","Weapon poison+ (4)","Weapon poison++ (1)","Weapon poison++ (2)","Weapon poison++ (3)","Weapon poison++ (4)","Weapon poison+++ (1)","Weapon poison+++ (2)","Weapon poison+++ (3)","Weapon poison+++ (4)","Weapon poison flask (1)","Weapon poison flask (2)","Weapon poison flask (3)","Weapon poison flask (4)","Weapon poison flask (5)","Weapon poison flask (6)","Weapon poison+ flask (1)","Weapon poison+ flask (2)","Weapon poison+ flask (3)","Weapon poison+ flask (4)","Weapon poison+ flask (5)","Weapon poison+ flask (6)","Weapon poison++ flask (1)","Weapon poison++ flask (2)","Weapon poison++ flask (3)","Weapon poison++ flask (4)","Weapon poison++ flask (5)","Weapon poison++ flask (6)","Weapon poison+++ flask (1)","Weapon poison+++ flask (2)","Weapon poison+++ flask (3)","Weapon poison+++ flask (4)","Weapon poison+++ flask (5)","Weapon poison+++ flask (6)"}
+
+local sortedFoods = {}
+for _, v in ipairs(foodItems) do
+    table.insert(sortedFoods, v)
+end
+table.sort(sortedFoods)
+
+local sortedRestore = {}
+for _, v in ipairs(prayerRestoreItems) do
+    table.insert(sortedRestore, v)
+end
+table.sort(sortedRestore)
+
+local sortedOverload = {}
+for _, v in ipairs(overloadItems) do
+    table.insert(sortedOverload, v)
+end
+table.sort(sortedOverload)
+
+local sortedWeaponPoison = {}
+for _, v in ipairs(weaponPoisonItems) do
+    table.insert(sortedWeaponPoison, v)
+end
+table.sort(sortedWeaponPoison)
+
 local overloadBuff = {
     Overload = {
         buffId = 26093
@@ -87,11 +102,24 @@ local isPrepared = false
 local isInArena = false
 local isLooted = false
 local isPortalUsed = false
+local isPhasing = false
 local playerPosition = nil
+local startLocationOfArena = nil
 local centerOfArenaPosition = nil
-local selectedPrayerType = nil
+local selectedPrayerType = API.VB_FindPSettinOrder(3277, 0).state & 1
 local selectedPassive = nil
+local kerapacPhase = 1
 local avoidLightningTicks = API.Get_tick()
+local eatFoodTicks = API.Get_tick()
+local drinkRestoreTicks = API.Get_tick()
+local hpThreshold= 70
+local prayerThreshold = 30
+local distanceThreshold = 6
+local dodgeCooldown = 7
+local foodCooldown = 3
+local drinkCooldown = 3
+local phaseTransitionThreshold = 50000
+local lootPosition = 5
 
 local MARGIN = 100
 local PADDING_Y = 6
@@ -102,21 +130,26 @@ local BOX_HEIGHT = 100
 local BOX_START_Y = 200
 local BOX_END_Y = BOX_START_Y + BOX_HEIGHT
 local BOX_END_X = MARGIN + BOX_WIDTH + (2 * PADDING_X)
+local BUTTON_WIDTH = 70
+local BUTTON_HEIGHT = 25
+local BUTTON_MARGIN = 8
 
-local GUI = {
-    Background = API.CreateIG_answer(),
-    PassivesDropdown = API.CreateIG_answer(),
-    StartButton = API.CreateIG_answer()
-}
+Background = API.CreateIG_answer()
+Background.box_name = "GuiBackground"
+Background.box_start = FFPOINT.new(MARGIN, BOX_START_Y, 0)
+Background.box_size = FFPOINT.new(BOX_END_X, BOX_END_Y, 0)
+Background.colour = ImColor.new(50, 48, 47)
 
-GUI.Background.box_name = "GuiBackground"
-GUI.Background.box_start = FFPOINT.new(MARGIN, BOX_START_Y, 0)
-GUI.Background.box_size = FFPOINT.new(BOX_END_X, BOX_END_Y, 0)
-GUI.Background.colour = ImColor.new(50, 48, 47)
+PassivesDropdown = API.CreateIG_answer()
+PassivesDropdown.box_name = "Passives"
+PassivesDropdown.box_start = FFPOINT.new(MARGIN + PADDING_X, BOX_START_Y + PADDING_Y, 0)
+PassivesDropdown.stringsArr = {}
 
-GUI.PassivesDropdown.box_name = "Passives"
-GUI.PassivesDropdown.box_start = FFPOINT.new(MARGIN + PADDING_X, BOX_START_Y + PADDING_Y, 0)
-GUI.PassivesDropdown.stringsArr = {}
+StartButton = API.CreateIG_answer()
+StartButton.box_name = "Start"
+StartButton.box_start = FFPOINT.new(MARGIN + PADDING_X, BOX_START_Y + BOX_HEIGHT - BUTTON_HEIGHT - PADDING_Y, 0)
+StartButton.box_size = FFPOINT.new(BUTTON_WIDTH, BUTTON_HEIGHT, 0)
+StartButton.colour = ImColor.new(0, 255, 0)
 
 local sortedKeys = {}
 for key in pairs(passiveBuffs) do
@@ -125,215 +158,51 @@ end
 table.sort(sortedKeys)
 
 for _, key in ipairs(sortedKeys) do
-    table.insert(GUI.PassivesDropdown.stringsArr, passiveBuffs[key].name)
+    table.insert(PassivesDropdown.stringsArr, passiveBuffs[key].name)
 end
 
-local BUTTON_WIDTH = 70
-local BUTTON_HEIGHT = 25
-local BUTTON_MARGIN = 8
-
-GUI.StartButton.box_name = "Start"
-GUI.StartButton.box_start = FFPOINT.new(MARGIN + PADDING_X, BOX_START_Y + BOX_HEIGHT - BUTTON_HEIGHT - PADDING_Y, 0)
-GUI.StartButton.box_size = FFPOINT.new(BUTTON_WIDTH, BUTTON_HEIGHT, 0)
-GUI.StartButton.colour = ImColor.new(0, 255, 0)
- 
-function GUI.HandleStartButton()
-    if not startScript then
-        if GUI.StartButton.return_click then
-            GUI.StartButton.return_click = false
-            startScript = true
-            selectedPassive = GUI.PassivesDropdown.stringsArr[tonumber(GUI.PassivesDropdown.int_value) + 1]
-            local prayerTypeFromSelectedPassive = passiveBuffs[selectedPassive]
-            selectedPrayerType = prayerTypeFromSelectedPassive.type
-            print("Script started")
-            print("Selected Prayer Type: " .. (selectedPrayerType or "None"))
-            print("Selected Passive: " .. (selectedPassive or "None"))
-        end
-    end
+local function log(message, level)
+    level = level or "INFO"
+    print(string.format("[%s] %s",level, message))
 end
 
-function GUI:HandleButtons()
-    GUI.HandleStartButton()
-end
-
-function GUI.DrawButtons()
-    API.DrawSquareFilled(GUI.Background)
-    API.DrawComboBox(GUI.PassivesDropdown, false)
-    API.DrawBox(GUI.StartButton)
-end
-
-function GUI:DrawGui()
-    GUI:DrawButtons()
-    GUI:HandleButtons()
-end
-
--- Calculate direction vector from one point to another
-function CalculateDirectionVector(fromPoint, toPoint)
-    return WPOINT.new(
-        toPoint.x - fromPoint.x,
-        toPoint.y - fromPoint.y,
-        toPoint.z - fromPoint.z
-    )
-end
-
--- Calculate magnitude of a vector
-function CalculateMagnitude(vector)
-    return math.sqrt(
-        vector.x * vector.x + 
-        vector.y * vector.y + 
-        vector.z * vector.z
-    )
-end
-
--- Normalize a vector (returns nil if magnitude is zero)
-function NormalizeVector(vector)
-    local magnitude = CalculateMagnitude(vector)
-    
-    -- Prevent division by zero
-    if magnitude > 0 then
-        return WPOINT.new(
-            vector.x / magnitude,
-            vector.y / magnitude,
-            vector.z / magnitude
-        )
-    else
-        return nil -- or you could return a zero vector depending on your needs
-    end
-end
-
-function sleepTickRandom(sleepticks)
+local function sleepTickRandom(sleepticks)
     API.Sleep_tick(sleepticks)
     API.RandomSleep2(1, 120, 0)
 end
 
-function stopScript()
+local function stopScript()
+    log("Stopping script", "WARN")
     startScript = false
     API.Write_LoopyLoop(false)
 end
 
-function eatFood()
-    if API.GetHPrecent() < 70 and Inventory:ContainsAny(foodItems) and eatFoodAB ~= nil then
-        print("Yum yum")
-        API.DoAction_Ability_Direct(eatFoodAB, 1, API.OFF_ACT_GeneralInterface_route)
-        sleepTickRandom(1)
+local function calculateDirectionVector(fromPoint, toPoint)
+    return WPOINT.new(toPoint.x - fromPoint.x, toPoint.y - fromPoint.y, toPoint.z - fromPoint.z)
+end
+
+local function calculateMagnitude(vector)
+    return math.sqrt(vector.x * vector.x + vector.y * vector.y + vector.z * vector.z)
+end
+
+local function normalizeVector(vector)
+    local magnitude = calculateMagnitude(vector)
+    if magnitude > 0 then
+        return WPOINT.new(vector.x / magnitude, vector.y / magnitude, vector.z / magnitude)
+    else
+        return nil
     end
 end
 
-function drinkRestore()
-    if API.GetPrayPrecent() < 30 and Inventory:ContainsAny(superRestoreItems) and drinkRestoreAB ~= nil then
-        print("Slurp")
-        API.DoAction_Ability_Direct(drinkRestoreAB, 1, API.OFF_ACT_GeneralInterface_route)
-        sleepTickRandom(1)
-    end
+local function roundVectorToInts(vector)
+    return WPOINT.new(math.floor(vector.x + 0.5), math.floor(vector.y + 0.5), math.floor(vector.z + 0.5))
 end
 
-function enablePassivePrayer()
-    local selectedPassiveData = passiveBuffs[selectedPassive]
-    if selectedPassiveData then
-        local buffId = selectedPassiveData.buffId
-        local ability = selectedPassiveData.AB
-        if not API.Buffbar_GetIDstatus(buffId).found and ability.id ~= 0 and API.GetPrayPrecent() > 0 then
-            print("Activate " .. selectedPassive)
-            API.DoAction_Ability_Direct(ability, 1, API.OFF_ACT_GeneralInterface_route)
-            sleepTickRandom(2)
-        end
-    else
-        print("No valid passive prayer selected or data not found.")
-    end
-end
-
-function enableMagePray()
-    local overheadTable = nil
-    if selectedPrayerType == "Prayers" then
-        overheadTable = overheadPrayersBuffs
-    elseif selectedPrayerType == "Curses" then
-        overheadTable = overheadCursesBuffs
-    else
-        print("Invalid prayer type selected.")
-        return
-    end
-    local selectedOverheadData = overheadTable.PrayMage
-    if selectedOverheadData then
-        local buffId = selectedOverheadData.buffId
-        local ability = selectedOverheadData.AB
-        if not API.Buffbar_GetIDstatus(buffId).found and ability.id ~= 0 then
-            print("Activate " .. selectedOverheadData.name)
-            API.DoAction_Ability_Direct(ability, 1, API.OFF_ACT_GeneralInterface_route)
-            sleepTickRandom(2)
-        end
-    else
-        print("No valid overhead prayer selected or data not found.")
-    end
-end
-
-function enableMeleePray()
-    local overheadTable = nil
-    if selectedPrayerType == "Prayers" then
-        overheadTable = overheadPrayersBuffs
-    elseif selectedPrayerType == "Curses" then
-        overheadTable = overheadCursesBuffs
-    else
-        print("Invalid prayer type selected.")
-        return
-    end
-    local selectedOverheadData = overheadTable.PrayMelee
-    if selectedOverheadData then
-        local buffId = selectedOverheadData.buffId
-        local ability = selectedOverheadData.AB
-        if not API.Buffbar_GetIDstatus(buffId).found and ability.id ~= 0 then
-            print("Activate " .. selectedOverheadData.name)
-            API.DoAction_Ability_Direct(ability, 1, API.OFF_ACT_GeneralInterface_route)
-            sleepTickRandom(2)
-        end
-    else
-        print("No valid overhead prayer selected or data not found.")
-    end
-end
-
-function disableMagePray()
-    local overheadTable = nil
-    if selectedPrayerType == "Prayers" then
-        overheadTable = overheadPrayersBuffs
-    elseif selectedPrayerType == "Curses" then
-        overheadTable = overheadCursesBuffs
-    else
-        print("Invalid prayer type selected.")
-        return
-    end
-    local selectedOverheadData = overheadTable.PrayMage
-    if selectedOverheadData then
-        local buffId = selectedOverheadData.buffId
-        local ability = selectedOverheadData.AB
-        if API.Buffbar_GetIDstatus(buffId).found and ability.id ~= 0 then
-            print("Deactivate " .. selectedOverheadData.name)
-            API.DoAction_Ability_Direct(ability, 1, API.OFF_ACT_GeneralInterface_route)
-            sleepTickRandom(2)
-        end
-    else
-        print("No valid overhead prayer selected or data not found.")
-    end
-end
-
-function disablePassivePrayer()
-    local selectedPassiveData = passiveBuffs[selectedPassive]
-    if selectedPassiveData then
-        local buffId = selectedPassiveData.buffId
-        local ability = selectedPassiveData.AB
-        if API.Buffbar_GetIDstatus(buffId).found and ability.id ~= 0 then
-            print("Deactivate " .. selectedPassive)
-            API.DoAction_Ability_Direct(ability, 1, API.OFF_ACT_GeneralInterface_route)
-            sleepTickRandom(2)
-        end
-    else
-        print("No valid passive prayer selected or data not found.")
-    end
-end
-
-function getKerapacInformation()
+local function getKerapacInformation()
     return API.FindNPCbyName("Kerapac, the bound", 30)
 end
 
-function getKerapacAnimation()
+local function getKerapacAnimation()
     local kerapacInfo = getKerapacInformation()
     if kerapacInfo then
         return kerapacInfo.Anim
@@ -341,7 +210,7 @@ function getKerapacAnimation()
     return nil
 end
 
-function getKerapacPositionFFPOINT()
+local function getKerapacPositionFFPOINT()
     local kerapacInfo = getKerapacInformation()
     if kerapacInfo then
         return FFPOINT.new(kerapacInfo.Tile_XYZ.x, kerapacInfo.Tile_XYZ.y, 0)
@@ -349,15 +218,8 @@ function getKerapacPositionFFPOINT()
     return nil
 end
 
-function getKerapacLife()
-    local kerapacInfo = getKerapacInformation()
-    if kerapacInfo then
-        return kerapacInfo.Life
-    end
-    return nil
-end
-
-function getBossStateFromAnimation(animation)
+local function getBossStateFromAnimation(animation)
+    if not animation then return nil end
     for state, data in pairs(bossStateEnum) do
         for _, animValue in ipairs(data.animations) do
             if animValue == animation then
@@ -368,151 +230,253 @@ function getBossStateFromAnimation(animation)
     return nil
 end
 
-function handleStateChange(currentAnimation)
-    local newState = getBossStateFromAnimation(currentAnimation)
-    if newState == nil then
+local function whichFood()
+    local food = ""
+    local foundFood = false
+    for i = 1, #sortedFoods do
+        foundFood = Inventory:Contains(sortedFoods[i])
+        if foundFood then
+            food = sortedFoods[i]
+            break
+        end
+    end
+    return food
+end
+
+local function whichPrayerRestore()
+    local prayerRestore = ""
+    local foundPrayerRestore = false
+    for i = 1, #sortedRestore do
+        foundPrayerRestore = Inventory:Contains(sortedRestore[i])
+        if foundPrayerRestore then
+            prayerRestore = sortedRestore[i]
+            break
+        end
+    end
+    return prayerRestore
+end
+
+local function whichOverload()
+    local overload = ""
+    local foundOverload = false
+    for i = 1, #sortedOverload do
+        foundOverload = Inventory:Contains(sortedOverload[i])
+        if foundOverload then
+            overload = sortedOverload[i]
+            break
+        end
+    end
+    return overload
+end
+
+local function whichWeaponPoison()
+    local weaponPoison = ""
+    local foundWeaponPoison = false
+    for i = 1, #sortedWeaponPoison do
+        foundWeaponPoison = Inventory:Contains(sortedWeaponPoison[i])
+        if foundWeaponPoison then
+            weaponPoison = sortedWeaponPoison[i]
+            break
+        end
+    end
+    return weaponPoison
+end
+
+local function enableMagePray()
+    local overheadTable = nil
+    if selectedPrayerType == "Prayers" then
+        overheadTable = overheadPrayersBuffs
+    elseif selectedPrayerType == "Curses" then
+        overheadTable = overheadCursesBuffs
+    else
+        log("Invalid prayer type selected.")
         return
     end
-    if newState ~= currentState then
-        print("State changed to: " .. bossStateEnum[newState].name)
-        currentState = newState
-        handleCombat(newState)
+    local selectedOverheadData = overheadTable.PrayMage
+    if selectedOverheadData then
+        local buffId = selectedOverheadData.buffId
+        local ability = selectedOverheadData.AB
+        if not API.Buffbar_GetIDstatus(buffId).found and ability.id ~= 0 then
+            log("Activate " .. selectedOverheadData.name)
+            API.DoAction_Ability_Direct(ability, 1, API.OFF_ACT_GeneralInterface_route)
+        end
+    else
+        log("No valid overhead prayer selected or data not found.")
     end
 end
 
-function handleCombat(state)
-    if (isFightStarted) then
-        if state == bossStateEnum.TEAR_RIFT_ATTACK_COMMENCE.name and not isRiftDodged then
-            API.DoAction_TileF(getKerapacPositionFFPOINT())
-            isRiftDodged = true
-            print("Moved player under Kerapac")
+local function enableMeleePray()
+    local overheadTable = nil
+    if selectedPrayerType == "Prayers" then
+        overheadTable = overheadPrayersBuffs
+    elseif selectedPrayerType == "Curses" then
+        overheadTable = overheadCursesBuffs
+    else
+        log("Invalid prayer type selected.")
+        return
+    end
+    local selectedOverheadData = overheadTable.PrayMelee
+    if selectedOverheadData then
+        local buffId = selectedOverheadData.buffId
+        local ability = selectedOverheadData.AB
+        if not API.Buffbar_GetIDstatus(buffId).found and ability.id ~= 0 then
+            log("Activate " .. selectedOverheadData.name)
+            API.DoAction_Ability_Direct(ability, 1, API.OFF_ACT_GeneralInterface_route)
         end
-        if state == bossStateEnum.TEAR_RIFT_ATTACK_MOVE.name and isRiftDodged then
-            sleepTickRandom(4)
-            API.DoAction_NPC(0x2a, API.OFF_ACT_AttackNPC_route, { getKerapacInformation().Id }, 50)
-            isRiftDodged = false
-            print("Attacking Kerapac")
+    else
+        log("No valid overhead prayer selected or data not found.")
+    end
+end
+
+local function disableMagePray()
+    local overheadTable = nil
+    if selectedPrayerType == "Prayers" then
+        overheadTable = overheadPrayersBuffs
+    elseif selectedPrayerType == "Curses" then
+        overheadTable = overheadCursesBuffs
+    else
+        log("Invalid prayer type selected.")
+        return
+    end
+    local selectedOverheadData = overheadTable.PrayMage
+    if selectedOverheadData then
+        local buffId = selectedOverheadData.buffId
+        local ability = selectedOverheadData.AB
+        if API.Buffbar_GetIDstatus(buffId).found and ability.id ~= 0 then
+            log("Deactivate " .. selectedOverheadData.name)
+            API.DoAction_Ability_Direct(ability, 1, API.OFF_ACT_GeneralInterface_route)
         end
-        if state == bossStateEnum.JUMP_ATTACK_COMMENCE.name and isJumpDodged then
-            isJumpDodged = false
-            API.DoAction_NPC(0x2a, API.OFF_ACT_AttackNPC_route, { getKerapacInformation().Id }, 50)
-            enableMeleePray()
-            print("Preparing for jump attack")
-        end
-        if state == bossStateEnum.JUMP_ATTACK_IN_AIR.name and not isJumpDodged then
-            isJumpDodged = true
-            API.DoAction_NPC(0x2a, API.OFF_ACT_AttackNPC_route, { getKerapacInformation().Id }, 50)
-            sleepTickRandom(1)
-            local surgeAB = API.GetABs_name("Surge")
-            API.DoAction_Ability_Direct(surgeAB, 1, API.OFF_ACT_GeneralInterface_route)
-            sleepTickRandom(1)
-            API.DoAction_NPC(0x2a, API.OFF_ACT_AttackNPC_route, { getKerapacInformation().Id }, 50)
-            print("Dodge jump attack")
+    else
+        log("No valid overhead prayer selected or data not found.")
+    end
+end
+
+local function enablePassivePrayer()
+    if selectedPassive == passiveBuffs.None.name then
+        return
+    end
+    local selectedPassiveData = passiveBuffs[selectedPassive]
+    if selectedPassiveData then
+        local buffId = selectedPassiveData.buffId
+        local ability = selectedPassiveData.AB
+        if not API.Buffbar_GetIDstatus(buffId).found and ability.id ~= 0 and API.GetPrayPrecent() > 0 then
+            log("Activate " .. selectedPassive)
+            API.DoAction_Ability_Direct(ability, 1, API.OFF_ACT_GeneralInterface_route)
             sleepTickRandom(2)
-            enableMagePray()
         end
-        if state == bossStateEnum.LIGHTNING_ATTACK.name then
-            API.DoAction_TileF(centerOfArenaPosition)
-            print("Moved to center")
-            sleepTickRandom(4)
-        end
+    else
+        log("No valid passive prayer selected or data not found.")
     end
 end
 
-function handleBossDeath()
-    local kerapacInfo = getKerapacInformation()
-    if kerapacInfo.Life <= 0 then
-        print("Kerapac is dead")
-        disableMagePray()
-        disablePassivePrayer()
-        isInBattle = false
-        isTimeToLoot = true
-        API.DoAction_TileF(FFPOINT.new(playerPosition.x + 6, playerPosition.y, 0))
-        API.WaitUntilMovingEnds(20, 4)
-        sleepTickRandom(2)
+local function disablePassivePrayer()
+    local selectedPassiveData = passiveBuffs[selectedPassive]
+    if selectedPassiveData then
+        local buffId = selectedPassiveData.buffId
+        local ability = selectedPassiveData.AB
+        if API.Buffbar_GetIDstatus(buffId).found and ability.id ~= 0 then
+            log("Deactivate " .. selectedPassive)
+            API.DoAction_Ability_Direct(ability, 1, API.OFF_ACT_GeneralInterface_route)
+            sleepTickRandom(2)
+        end
+    else
+        log("No valid passive prayer selected or data not found.")
     end
 end
 
-function handleBossLoot()
-    local guaranteedDrop = {51804, 51805}
-    local lootPiles = API.GetAllObjArray1(guaranteedDrop, 20, {3})
-    if #lootPiles > 0 then
-        if not API.LootWindowOpen_2() then 
-            print("Opening loot window")
-            API.DoAction_G_Items1(0x2d, guaranteedDrop, 30)
-            sleepTickRandom(1)
-        end
-        if API.LootWindowOpen_2() and (API.LootWindow_GetData()[1].itemid1 > 0) then 
-            print("Looting")
-            sleepTickRandom(3)
-            API.DoAction_LootAll_Button()
-            isLooted = true
-        end
-        sleepTickRandom(1)
-    end
+local function eatFood()
+    if not Inventory:ContainsAny(foodItems) or 
+    API.GetHPrecent() >= hpThreshold or 
+    API.Get_tick() - eatFoodTicks <= foodCooldown then return end
+    Inventory:Eat(whichFood())
+    log("Eating some food")
+    eatFoodTicks = API.Get_tick()
 end
 
-function handleBossReset()
-    isFightStarted = false
-    isRiftDodged = false
-    isJumpDodged = true
-    isInBattle = false
-    isTimeToLoot = false
-    isInWarsRetreat = false
-    isPrepared = false
-    isInArena = false
-    isLooted = false
-    isPortalUsed = false
+local function drinkPrayer()
+    if not Inventory:ContainsAny(prayerRestoreItems) or 
+    API.GetPrayPrecent() >= prayerThreshold or 
+    API.Get_tick() - drinkRestoreTicks <= drinkCooldown then return end
+    Inventory:Eat(whichPrayerRestore())
+    log("Slurping on a prayer potion")
+    drinkRestoreTicks = API.Get_tick()
 end
 
-function checkStartLocation()
+local function drinkOverload()
+    if not Inventory:ContainsAny(overloadItems) or 
+    API.Buffbar_GetIDstatus(overloadBuff.ElderOverload.buffId).found or 
+    API.Buffbar_GetIDstatus(overloadBuff.Overload.buffId).found or
+    API.Buffbar_GetIDstatus(overloadBuff.SupremeOverload.buffId).found or
+    API.Get_tick() - drinkRestoreTicks <= drinkCooldown then return end
+    Inventory:Eat(whichOverload())
+    log("Slurping an overload")
+    drinkRestoreTicks = API.Get_tick()
+end
+
+local function drinkWeaponPoison()
+    if not Inventory:ContainsAny(weaponPoisonItems) or 
+    API.Buffbar_GetIDstatus(weaponPoisonBuff).found or
+    API.Get_tick() - drinkRestoreTicks <= drinkCooldown then return end
+    Inventory:DoAction(whichWeaponPoison(), 1, API.OFF_ACT_GeneralInterface_route)
+    log("Slurping a weapon poison")
+    drinkRestoreTicks = API.Get_tick()
+end
+
+local function warsTeleport()
+    API.DoAction_Ability("War's Retreat", 1, API.OFF_ACT_GeneralInterface_route, false)
+    sleepTickRandom(10)
+end
+
+local function checkStartLocation()
     if not (API.Dist_FLP(FFPOINT.new(3299, 10131, 0)) < 30) then
-        print("Teleport to War's")
+        log("Teleport to War's")
         warsTeleport()
     else
-        print("Already in War's")
+        log("Already in War's")
         isInWarsRetreat = true
         sleepTickRandom(2)
     end
 end
 
-function warsTeleport()
-    API.DoAction_Ability("War's Retreat", 1, API.OFF_ACT_GeneralInterface_route, false)
-    sleepTickRandom(10)
+local function attackKerapac()
+    API.DoAction_NPC(0x2a, API.OFF_ACT_AttackNPC_route, { getKerapacInformation().Id }, 50)
 end
 
-function prepareForBattle()
-    print("Restoring prayer at Altar of War")
+local function playerDied()
+    if API.GetHPrecent() <= 0 then
+        log("You died", "WARN")
+        stopScript()
+    end
+end
+
+local function prepareForBattle()
+    log("Restoring prayer at Altar of War")
     API.DoAction_Object1(0x3d, API.OFF_ACT_GeneralObject_route0, { 114748 }, 50)
     API.WaitUntilMovingEnds(10, 4)
-    print("Withdraw last quick preset")
+    log("Withdraw last quick preset")
     API.DoAction_Object1(0x33, API.OFF_ACT_GeneralObject_route3, { 114750 }, 50)
     API.WaitUntilMovingEnds(10, 4)
     if not Inventory:ContainsAny(foodItems) then
-        print("No food items in inventory")
-        stopScript()
-    end
-    if not Inventory:ContainsAny(superRestoreItems) then
-        print("No super restores in inventory")
+        log("No food items in inventory")
         stopScript()
     end
     isPrepared = true
 end
 
-function goThroughPortal()
-    print("Go through portal")
+local function goThroughPortal()
+    log("Go through portal")
     API.DoAction_Object1(0x39, API.OFF_ACT_GeneralObject_route0, { 121019 }, 50)
     API.WaitUntilMovingEnds(20, 4)
     sleepTickRandom(2)
     local colosseum = API.GetAllObjArray1({120046}, 30, {12})
     if #colosseum > 0 then
         isPortalUsed = true
-        print("At Colosseum")
+        log("At Colosseum")
     end
 end
 
-function goThroughGate()
-    print("Click on Colosseum")
+local function goThroughGate()
+    log("Click on Colosseum")
     API.DoAction_Object1(0x39, API.OFF_ACT_GeneralObject_route0, { 120046 }, 50)
     sleepTickRandom(2)
     API.DoAction_Interface(0x24, 0xffffffff, 1, 1591, 60, -1, API.OFF_ACT_GeneralInterface_route)
@@ -520,63 +484,48 @@ function goThroughGate()
     local gate = API.GetAllObjArray1({120047}, 30, {12})
     if #gate > 0 then
         isInArena = true
-        print("In Colosseum")
+        log("In Colosseum")
     end
 end
 
-function startEncounter()
-    print("Start encounter")
+local function startEncounter()
+    log("Start encounter")
     playerPosition = API.PlayerCoord()
     centerOfArenaPosition = FFPOINT.new(playerPosition.x -7, playerPosition.y, 0)
-    print("Reset compass")
+    startLocationOfArena = FFPOINT.new(API.PlayerCoord().x - 25, API.PlayerCoord().y, 0)
+    log("Reset compass")
     API.DoAction_Interface(0xffffffff, 0xffffffff, 1, 1919, 2, -1, API.OFF_ACT_GeneralInterface_route)
     sleepTickRandom(1)
-    print("Move to spot")
-    API.DoAction_TileF(FFPOINT.new(API.PlayerCoord().x - 25, API.PlayerCoord().y, 0))
+    log("Move to spot")
+    API.DoAction_TileF(startLocationOfArena)
     API.WaitUntilMovingEnds(20, 4)
 end
 
-function playerDied()
-    if API.GetHPrecent() <= 0 then
-        print("You died")
-        stopScript()
-    end
-end
-
-function checkKerapacExists()
+local function checkKerapacExists()
     if getKerapacInformation().Action == "Attack" then
         isInBattle = true
         isFightStarted = true
-        API.DoAction_NPC(0x2a, API.OFF_ACT_AttackNPC_route, { getKerapacInformation().Id }, 50)
+        attackKerapac()
         enableMagePray()
-        print("Fight started")
+        log("Fight started")
     end
 end
 
-function RoundVectorToInts(vector)
-    return WPOINT.new(
-        math.floor(vector.x + 0.5),
-        math.floor(vector.y + 0.5),
-        math.floor(vector.z + 0.5)
-    )
-end
-
-function dodgeLightning()
+local function dodgeLightning()
     local findObjects = API.GetAllObjArray1({28071, 9216}, 60, {1})
     local boltsNearPlayer = {}
     for i = 1, #findObjects do
-        if findObjects[i].Distance < 6 then
+        if findObjects[i].Distance < distanceThreshold then
             table.insert(boltsNearPlayer, findObjects[i])
         end
     end
-    if API.Get_tick() - avoidLightningTicks > 8 and #boltsNearPlayer > 0 then 
-        local directionOfBolt = CalculateDirectionVector(boltsNearPlayer[1].Tile_XYZ, centerOfArenaPosition)
-        local normalizedFFPOINT = NormalizeVector(directionOfBolt)
-        local roundedFFPOINT = RoundVectorToInts(normalizedFFPOINT)
+    if API.Get_tick() - avoidLightningTicks > dodgeCooldown and #boltsNearPlayer > 0 then 
+        local directionOfBolt = calculateDirectionVector(boltsNearPlayer[1].Tile_XYZ, centerOfArenaPosition)
+        local normalizedFFPOINT = normalizeVector(directionOfBolt)
+        local roundedFFPOINT = roundVectorToInts(normalizedFFPOINT)
         local surgeAB = API.GetABs_name("Surge")
         local BDiveAB = API.GetABs_name("Bladed Dive")
         local DiveAB = API.GetABs_name("Dive")
-        print("x: " .. roundedFFPOINT.x .. "y: " .. roundedFFPOINT.y)
         if (BDiveAB.cooldown_timer > 0 or DiveAB.cooldown_timer > 0) then
             API.DoAction_TileF(FFPOINT.new(boltsNearPlayer[1].Tile_XYZ.x + (roundedFFPOINT.x * -10), boltsNearPlayer[1].Tile_XYZ.y + (roundedFFPOINT.y * -10), 0))
             API.RandomSleep2(1, 120, 0)
@@ -589,10 +538,184 @@ function dodgeLightning()
     end
 end
 
-API.logWarn("Started Ernie's Kerapac Bosser " .. version)
+local function startPhaseTransition()
+    if startLocationOfArena then
+        API.DoAction_TileF(startLocationOfArena)
+    end
+    kerapacPhase = kerapacPhase + 1
+    isPhasing = true
+    log("Entering Phase " .. kerapacPhase)
+    API.WaitUntilMovingEnds(10, 4)
+end
+
+local function endPhaseTransition()
+    attackKerapac()
+    isPhasing = false
+    log("Resuming battle")
+end
+
+local function handlePhaseTransitions(bossLife)
+    if bossLife <= phaseTransitionThreshold and kerapacPhase < 3 and not isPhasing then
+        startPhaseTransition()
+    elseif bossLife > phaseTransitionThreshold and isPhasing then
+        endPhaseTransition()
+    end
+end
+
+local function handleBossLoot()
+    local guaranteedDrop = {51804, 51805}
+    local lootPiles = API.GetAllObjArray1(guaranteedDrop, 20, {3})
+    if #lootPiles > 0 then
+        if not API.LootWindowOpen_2() then 
+            log("Opening loot window")
+            API.DoAction_G_Items1(0x2d, guaranteedDrop, 30)
+            sleepTickRandom(3)
+        end
+        if API.LootWindowOpen_2() and (API.LootWindow_GetData()[1].itemid1 > 0) and not isLooted then 
+            log("Looting")
+            API.DoAction_LootAll_Button()
+            sleepTickRandom(2)
+            isLooted = true
+            -- TODO IMPLEMENT LOGIC TO VALIDATE INVENTORY FOR FREE SPACES AND DROP FOOD TO COLLECT ALL LOOT
+        end
+        sleepTickRandom(1)
+    end
+end
+
+local function handleBossDeath()
+    disableMagePray()
+    disablePassivePrayer()
+    isInBattle = false
+    isTimeToLoot = true
+    if playerPosition then
+        local lootPosition = FFPOINT.new(playerPosition.x + lootPosition, playerPosition.y, 0)
+        API.DoAction_TileF(lootPosition)
+        log("Moving to loot")
+        API.WaitUntilMovingEnds(20, 4)
+    end
+end
+
+local function handleBossPhase()
+    local kerapacInfo = getKerapacInformation()
+    if not kerapacInfo then
+        log("Kerapac information not available")
+        return
+    end
+    if kerapacInfo.Life <= 0 then
+        log("Preparing to loot")
+        handleBossDeath()
+        return
+    end
+    handlePhaseTransitions(kerapacInfo.Life)
+end
+
+local function handleBossReset()
+    isFightStarted = false
+    isRiftDodged = false
+    isJumpDodged = true
+    isInBattle = false
+    isTimeToLoot = false
+    isInWarsRetreat = false
+    isPrepared = false
+    isInArena = false
+    isLooted = false
+    isPortalUsed = false
+    isPhasing = false
+    kerapacPhase = 1
+    log("Let's go again")
+end
+
+local function handleCombat(state)
+    if (isFightStarted) and not isPhasing then
+        if state == bossStateEnum.TEAR_RIFT_ATTACK_COMMENCE.name and not isRiftDodged then
+            API.DoAction_TileF(getKerapacPositionFFPOINT())
+            isRiftDodged = true
+            log("Moved player under Kerapac")
+        end
+        if state == bossStateEnum.TEAR_RIFT_ATTACK_MOVE.name and isRiftDodged then
+            attackKerapac()
+            isRiftDodged = false
+            log("Attacking Kerapac")
+        end
+        if state == bossStateEnum.JUMP_ATTACK_COMMENCE.name and isJumpDodged then
+            isJumpDodged = false
+            attackKerapac()
+            enableMeleePray()
+            log("Preparing for jump attack")
+        end
+        if state == bossStateEnum.JUMP_ATTACK_IN_AIR.name and not isJumpDodged then
+            isJumpDodged = true
+            attackKerapac()
+            sleepTickRandom(1)
+            local surgeAB = API.GetABs_name("Surge")
+            API.DoAction_Ability_Direct(surgeAB, 1, API.OFF_ACT_GeneralInterface_route)
+            sleepTickRandom(1)
+            attackKerapac()
+            log("Dodge jump attack")
+            enableMagePray()
+        end
+    end
+end
+
+local function handleStateChange(currentAnimation)
+    local newState = getBossStateFromAnimation(currentAnimation)
+    if newState == nil then
+        return
+    end
+    if newState ~= currentState then
+        log("State changed to: " .. bossStateEnum[newState].name)
+        currentState = newState
+        handleCombat(newState)
+    end
+end
+
+local function managePlayer()
+    dodgeLightning()
+    eatFood()
+    drinkOverload()
+    drinkWeaponPoison()
+    drinkPrayer()
+    enablePassivePrayer()
+    playerDied()
+end
+
+local function HandleStartButton()
+    if not startScript then
+        if StartButton.return_click then
+            StartButton.return_click = false
+            startScript = true
+            selectedPassive = PassivesDropdown.stringsArr[tonumber(PassivesDropdown.int_value) + 1]
+            if selectedPrayerType == 0 then
+                selectedPrayerType = "Prayers"  
+            elseif selectedPrayerType == 1 then
+                selectedPrayerType = "Curses"  
+            end
+            log("Script started")
+            log("Selected Prayer Type: " .. (selectedPrayerType or "None"))
+            log("Selected Passive: " .. (selectedPassive or "None"))
+        end
+    end
+end
+
+local function HandleButtons()
+    HandleStartButton()
+end
+
+local function DrawButtons()
+    API.DrawSquareFilled(Background)
+    API.DrawComboBox(PassivesDropdown, false)
+    API.DrawBox(StartButton)
+end
+
+local function DrawGui()
+    DrawButtons()
+    HandleButtons()
+end
+
+log("Started Ernie's Kerapac Bosser " .. version)
 API.Write_LoopyLoop(true)
 while (API.Read_LoopyLoop()) do
-    GUI:DrawGui()
+    DrawGui()
     if startScript then
         if not isInBattle and not isTimeToLoot then
             if not isInWarsRetreat then
@@ -612,13 +735,9 @@ while (API.Read_LoopyLoop()) do
                 checkKerapacExists()
             end
         elseif isInBattle then
-            enablePassivePrayer()
-            eatFood()
-            drinkRestore()
-            dodgeLightning()
-            playerDied()
+            managePlayer()
             handleStateChange(getKerapacAnimation())
-            handleBossDeath()
+            handleBossPhase()
         elseif isTimeToLoot and not isLooted then
             handleBossLoot()
         elseif isLooted then
@@ -626,4 +745,4 @@ while (API.Read_LoopyLoop()) do
         end
     end
 end
-API.logWarn("Stopped Ernie's Kerapac Bosser " .. version)
+log("Stopped Ernie's Kerapac Bosser " .. version)
