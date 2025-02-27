@@ -1,4 +1,4 @@
-local version = "1.5"
+local version = "2.0"
 local API = require("api")
 API.SetDrawLogs(true)
 
@@ -41,6 +41,31 @@ local passiveBuffs = {
 
 local foodItems = { "Sailfish", "Rocktail", "Sailfish soup", "Desert sole", "Ghostly sole", "Beltfish", "Catfish" }
 local superRestoreItems = { "Super restore (4)", "Super restore (3)", "Super restore (2)", "Super restore (1)", "Super restore flask (6)", "Super restore flask (5)", "Super restore flask (4)", "Super restore flask (3)", "Super restore flask (2)", "Super restore flask (1)" }
+local overloadItems = {
+"Overload (4)", "Overload (3)", "Overload (2)", "Overload (1)",
+"Overload Flask (6)", "Overload Flask (5)", "Overload Flask (4)", "Overload Flask (3)", "Overload Flask (2)", "Overload Flask (1)",
+"Holy overload (6)", "Holy overload (5)", "Holy overload (4)", "Holy overload (3)", "Holy overload (2)", "Holy overload (1)", 
+"Searing overload (6)", "Searing overload (5)", "Searing overload (4)", "Searing overload (3)", "Searing overload (2)", "Searing overload (1)",
+"Overload salve (6)", "Overload salve (5)", "Overload salve (4)", "Overload salve (3)", "Overload salve (2)", "Overload salve (1)",     
+"Aggroverload (6)", "Aggroverload (5)", "Aggroverload (4)", "Aggroverload (3)", "Aggroverload (2)", "Aggroverload (1)",
+"Holy aggroverload (6)", "Holy aggroverload (5)", "Holy aggroverload (4)", "Holy aggroverload (3)", "Holy aggroverload (2)", "Holy aggroverload (1)",
+"Supreme overload salve (6)", "Supreme overload salve (5)", "Supreme overload salve (4)", "Supreme overload salve (3)", "Supreme overload salve (2)", "Supreme overload salve (1)",
+"Elder overload potion (6)", "Elder overload potion (5)", "Elder overload potion (4)", "Elder overload potion (3)", "Elder overload potion (2)", "Elder overload potion (1)",
+"Elder overload salve (6)", "Elder overload salve (5)", "Elder overload salve (4)", "Elder overload salve (3)", "Elder overload salve (2)", "Elder overload salve (1)"
+}
+local weaponPoisonItems = {}
+local overloadBuff = {
+    Overload = {
+        buffId = 26093
+    },
+    ElderOverload = {
+        buffId = 49039
+    },
+    SupremeOverload = {
+        buffId = 33210
+    }
+}
+local weaponPoisonBuff = 30095
 
 local bossStateEnum = {
     BASIC_ATTACK = { name = "BASIC_ATTACK", animations = { 34192 } },
@@ -63,19 +88,20 @@ local isInArena = false
 local isLooted = false
 local isPortalUsed = false
 local playerPosition = nil
+local centerOfArenaPosition = nil
 local selectedPrayerType = nil
 local selectedPassive = nil
+local avoidLightningTicks = API.Get_tick()
 
-local MARGIN = 10
+local MARGIN = 100
 local PADDING_Y = 6
 local PADDING_X = 5
 local LINE_HEIGHT = 12
 local BOX_WIDTH = 280
 local BOX_HEIGHT = 100
-local BOX_START_Y = 50
+local BOX_START_Y = 200
 local BOX_END_Y = BOX_START_Y + BOX_HEIGHT
 local BOX_END_X = MARGIN + BOX_WIDTH + (2 * PADDING_X)
-local guiVisible = true
 
 local GUI = {
     Background = API.CreateIG_answer(),
@@ -139,6 +165,40 @@ end
 function GUI:DrawGui()
     GUI:DrawButtons()
     GUI:HandleButtons()
+end
+
+-- Calculate direction vector from one point to another
+function CalculateDirectionVector(fromPoint, toPoint)
+    return WPOINT.new(
+        toPoint.x - fromPoint.x,
+        toPoint.y - fromPoint.y,
+        toPoint.z - fromPoint.z
+    )
+end
+
+-- Calculate magnitude of a vector
+function CalculateMagnitude(vector)
+    return math.sqrt(
+        vector.x * vector.x + 
+        vector.y * vector.y + 
+        vector.z * vector.z
+    )
+end
+
+-- Normalize a vector (returns nil if magnitude is zero)
+function NormalizeVector(vector)
+    local magnitude = CalculateMagnitude(vector)
+    
+    -- Prevent division by zero
+    if magnitude > 0 then
+        return WPOINT.new(
+            vector.x / magnitude,
+            vector.y / magnitude,
+            vector.z / magnitude
+        )
+    else
+        return nil -- or you could return a zero vector depending on your needs
+    end
 end
 
 function sleepTickRandom(sleepticks)
@@ -328,6 +388,7 @@ function handleCombat(state)
             print("Moved player under Kerapac")
         end
         if state == bossStateEnum.TEAR_RIFT_ATTACK_MOVE.name and isRiftDodged then
+            sleepTickRandom(4)
             API.DoAction_NPC(0x2a, API.OFF_ACT_AttackNPC_route, { getKerapacInformation().Id }, 50)
             isRiftDodged = false
             print("Attacking Kerapac")
@@ -349,6 +410,11 @@ function handleCombat(state)
             print("Dodge jump attack")
             sleepTickRandom(2)
             enableMagePray()
+        end
+        if state == bossStateEnum.LIGHTNING_ATTACK.name then
+            API.DoAction_TileF(centerOfArenaPosition)
+            print("Moved to center")
+            sleepTickRandom(4)
         end
     end
 end
@@ -461,6 +527,7 @@ end
 function startEncounter()
     print("Start encounter")
     playerPosition = API.PlayerCoord()
+    centerOfArenaPosition = FFPOINT.new(playerPosition.x -7, playerPosition.y, 0)
     print("Reset compass")
     API.DoAction_Interface(0xffffffff, 0xffffffff, 1, 1919, 2, -1, API.OFF_ACT_GeneralInterface_route)
     sleepTickRandom(1)
@@ -486,48 +553,39 @@ function checkKerapacExists()
     end
 end
 
-function subtractVectors(v1, v2)
-    return FFPOINT.new(v1.x - v2.x, v1.y - v2.y, v1.z - v2.z)
+function RoundVectorToInts(vector)
+    return WPOINT.new(
+        math.floor(vector.x + 0.5),
+        math.floor(vector.y + 0.5),
+        math.floor(vector.z + 0.5)
+    )
 end
 
-function normalizeVector(v)
-    local length = math.sqrt(v.x * v.x + v.y * v.y + v.z * v.z)
-    return FFPOINT.new(v.x / length, v.y / length, v.z / length)
-end
-
-local bolts = {{9216,28071}}
-local lightningBolts = API.GetAllObjArray1(bolts, 30, {1})
 function dodgeLightning()
-    if lightningBolts ~= nil then
-        local boltPreviousPosition = nil
-        local normalizedDirectionVector = nil
-        for i = 1, #lightningBolts do
-            local bolt = lightningBolts[i]
-            if bolt.Distance < 7 then
-                boltPreviousPosition = bolt.Tile_XYZ
-                sleepTickRandom(2)
-                normalizedDirectionVector = normalizeVector(subtractVectors(boltPreviousPosition, bolt.Tile_XYZ))
-            end
+    local findObjects = API.GetAllObjArray1({28071, 9216}, 60, {1})
+    local boltsNearPlayer = {}
+    for i = 1, #findObjects do
+        if findObjects[i].Distance < 6 then
+            table.insert(boltsNearPlayer, findObjects[i])
         end
-        if normalizedDirectionVector ~= nil then
-            if normalizedDirectionVector.x > 0 then
-              print("Moving right")
-            elseif normalizedDirectionVector.x < 0 then
-                print("Moving left")
-            end
-        
-            if normalizedDirectionVector.y > 0 then
-                print("Moving up")
-            elseif normalizedDirectionVector.y < 0 then
-                print("Moving down")
-            end
-        
-            if normalizedDirectionVector.z > 0 then
-                print("Moving forward")
-            elseif normalizedDirectionVector.z < 0 then
-                print("Moving backward")
-            end
-        end
+    end
+    if API.Get_tick() - avoidLightningTicks > 8 and #boltsNearPlayer > 0 then 
+        local directionOfBolt = CalculateDirectionVector(boltsNearPlayer[1].Tile_XYZ, centerOfArenaPosition)
+        local normalizedFFPOINT = NormalizeVector(directionOfBolt)
+        local roundedFFPOINT = RoundVectorToInts(normalizedFFPOINT)
+        local surgeAB = API.GetABs_name("Surge")
+        local BDiveAB = API.GetABs_name("Bladed Dive")
+        local DiveAB = API.GetABs_name("Dive")
+        print("x: " .. roundedFFPOINT.x .. "y: " .. roundedFFPOINT.y)
+        if (BDiveAB.cooldown_timer > 0 or DiveAB.cooldown_timer > 0) then
+            API.DoAction_TileF(FFPOINT.new(boltsNearPlayer[1].Tile_XYZ.x + (roundedFFPOINT.x * -10), boltsNearPlayer[1].Tile_XYZ.y + (roundedFFPOINT.y * -10), 0))
+            API.RandomSleep2(1, 120, 0)
+            API.DoAction_Ability_Direct(surgeAB, 1, API.OFF_ACT_GeneralInterface_route)
+        elseif not API.DoAction_Dive_Tile(WPOINT.new(boltsNearPlayer[1].Tile_XYZ.x + (roundedFFPOINT.x * -10), boltsNearPlayer[1].Tile_XYZ.y + (roundedFFPOINT.y * -10), 0)) then
+            API.DoAction_BDive_Tile(WPOINT.new(boltsNearPlayer[1].Tile_XYZ.x + (roundedFFPOINT.x * -10), boltsNearPlayer[1].Tile_XYZ.y + (roundedFFPOINT.y * -10), 0))
+        end  
+        print("Dodged lightning")
+        avoidLightningTicks = API.Get_tick()
     end
 end
 
