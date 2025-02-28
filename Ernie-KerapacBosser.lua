@@ -722,7 +722,7 @@ local function handleCombat(state)
             sleepTickRandom(2)
             enableMagePray()
         end
-        if state == bossStateEnum.JUMP_ATTACK_LANDED and getKerapacInformation().Distance < 4 then
+        if state == bossStateEnum.JUMP_ATTACK_LANDED.name and getKerapacInformation().Distance < 4 then
             API.DoAction_TileF(centerOfArenaPosition)
             sleepTickRandom(1)
             local surgeAB = API.GetABs_name("Surge")
