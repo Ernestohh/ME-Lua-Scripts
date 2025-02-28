@@ -1,4 +1,4 @@
-local version = "3.0"
+local version = "3.5"
 local API = require("api")
 API.SetDrawLogs(true)
 
@@ -6,8 +6,13 @@ local startScript = false
 local currentTick = API.Get_tick()
 local OBJECTS_table = API.ReadAllObjectsArray({-1}, {-1}, {})
 
-local eatFoodAB = API.GetABs_name("Eat Food")
-local drinkRestoreAB = API.GetABs_name("Super restore potion")
+local extraAbilities = {
+    devotionAbility = {name = "Devotion", buffId = 21665, AB = API.GetABs_name("Devotion"), threshold = 50},
+    debilitateAbility = {name = "Debilitate", debuffId = 14226, AB = API.GetABs_name("Debilitate"), threshold = 50},
+    darknessAbility = {name = "Darkness", debuffId = 14226, AB = API.GetABs_name("Darkness"), threshold = 0},
+    invokeDeathAbility = {name = "Invoke Death", debuffId = 14226, AB = API.GetABs_name("Invoke Death"), threshold = 0}
+}
+
 
 local prayerType = {
     Curses = { name = "Curses" },
@@ -103,6 +108,13 @@ local isInArena = false
 local isLooted = false
 local isPortalUsed = false
 local isPhasing = false
+local isMovedToCenter = false
+local hasOverload = false
+local hasWeaponPoison = false
+local hasDebilitate = false
+local hasDevotion = false
+local hasDarkness = false
+local hasInvokeDeath = false
 local playerPosition = nil
 local startLocationOfArena = nil
 local centerOfArenaPosition = nil
@@ -114,12 +126,13 @@ local eatFoodTicks = API.Get_tick()
 local drinkRestoreTicks = API.Get_tick()
 local hpThreshold= 70
 local prayerThreshold = 30
-local distanceThreshold = 6
-local dodgeCooldown = 7
+local distanceThreshold = 5
+local dodgeCooldown = 6
 local foodCooldown = 3
 local drinkCooldown = 3
 local phaseTransitionThreshold = 50000
 local lootPosition = 5
+local dodgeDistance = -10 
 
 local MARGIN = 100
 local PADDING_Y = 6
@@ -134,18 +147,18 @@ local BUTTON_WIDTH = 70
 local BUTTON_HEIGHT = 25
 local BUTTON_MARGIN = 8
 
-Background = API.CreateIG_answer()
+local Background = API.CreateIG_answer()
 Background.box_name = "GuiBackground"
 Background.box_start = FFPOINT.new(MARGIN, BOX_START_Y, 0)
 Background.box_size = FFPOINT.new(BOX_END_X, BOX_END_Y, 0)
 Background.colour = ImColor.new(50, 48, 47)
 
-PassivesDropdown = API.CreateIG_answer()
+local PassivesDropdown = API.CreateIG_answer()
 PassivesDropdown.box_name = "Passives"
 PassivesDropdown.box_start = FFPOINT.new(MARGIN + PADDING_X, BOX_START_Y + PADDING_Y, 0)
 PassivesDropdown.stringsArr = {}
 
-StartButton = API.CreateIG_answer()
+local StartButton = API.CreateIG_answer()
 StartButton.box_name = "Start"
 StartButton.box_start = FFPOINT.new(MARGIN + PADDING_X, BOX_START_Y + BOX_HEIGHT - BUTTON_HEIGHT - PADDING_Y, 0)
 StartButton.box_size = FFPOINT.new(BUTTON_WIDTH, BUTTON_HEIGHT, 0)
@@ -177,27 +190,6 @@ local function stopScript()
     API.Write_LoopyLoop(false)
 end
 
-local function calculateDirectionVector(fromPoint, toPoint)
-    return WPOINT.new(toPoint.x - fromPoint.x, toPoint.y - fromPoint.y, toPoint.z - fromPoint.z)
-end
-
-local function calculateMagnitude(vector)
-    return math.sqrt(vector.x * vector.x + vector.y * vector.y + vector.z * vector.z)
-end
-
-local function normalizeVector(vector)
-    local magnitude = calculateMagnitude(vector)
-    if magnitude > 0 then
-        return WPOINT.new(vector.x / magnitude, vector.y / magnitude, vector.z / magnitude)
-    else
-        return nil
-    end
-end
-
-local function roundVectorToInts(vector)
-    return WPOINT.new(math.floor(vector.x + 0.5), math.floor(vector.y + 0.5), math.floor(vector.z + 0.5))
-end
-
 local function getKerapacInformation()
     return API.FindNPCbyName("Kerapac, the bound", 30)
 end
@@ -216,6 +208,14 @@ local function getKerapacPositionFFPOINT()
         return FFPOINT.new(kerapacInfo.Tile_XYZ.x, kerapacInfo.Tile_XYZ.y, 0)
     end
     return nil
+end
+
+local function hasMarkOfDeath()
+    return (API.VB_FindPSett(11303).state >> 7 & 0x1) == 1
+end
+
+local function hasDeathInvocation()
+    return API.Buffbar_GetIDstatus(30100).id > 0
 end
 
 local function getBossStateFromAnimation(animation)
@@ -280,6 +280,23 @@ local function whichWeaponPoison()
         end
     end
     return weaponPoison
+end
+
+local function checkAvailableBuffs()
+    local darknessOnBar = false
+    local invokeDeathOnBar = false
+    hasOverload = whichOverload() ~= ""
+    hasWeaponPoison = whichWeaponPoison() ~= ""
+    hasDebilitate = extraAbilities.debilitateAbility.AB.slot ~= 0
+    hasDevotion = extraAbilities.devotionAbility.AB.slot ~= 0
+    darknessOnBar = extraAbilities.darknessAbility.AB.slot ~= 0
+    if darknessOnBar then
+        hasDarkness = extraAbilities.darknessAbility.AB.enabled
+    end
+    invokeDeathOnBar = extraAbilities.invokeDeathAbility.AB.slot ~= 0
+    if invokeDeathOnBar then
+        hasInvokeDeath = extraAbilities.invokeDeathAbility.AB.enabled
+    end
 end
 
 local function enableMagePray()
@@ -384,6 +401,53 @@ local function disablePassivePrayer()
     end
 end
 
+local function useDarkness()
+    if extraAbilities.darknessAbility.AB.id > 0 and
+        extraAbilities.darknessAbility.AB.enabled and 
+        not API.Buffbar_GetIDstatus(extraAbilities.darknessAbility.buffId).found then
+        API.DoAction_Ability_check(extraAbilities.darknessAbility.name, 1, API.OFF_ACT_GeneralInterface_route, true, true, true)
+        sleepTickRandom(2)
+    end
+end
+
+local function useInvokeDeath()
+    if extraAbilities.invokeDeathAbility.AB.id > 0 and 
+        extraAbilities.invokeDeathAbility.AB.enabled and 
+        not hasMarkOfDeath() and
+        not hasDeathInvocation() and 
+        getKerapacInformation().Life > 15000 then
+        API.DoAction_Ability_check(extraAbilities.invokeDeathAbility.name, 1, API.OFF_ACT_GeneralInterface_route, true, true, true)
+        sleepTickRandom(2)
+    end
+end
+
+local function useDevotionAbility()
+    if extraAbilities.devotionAbility.AB.id > 0 and 
+        extraAbilities.devotionAbility.AB.enabled and 
+        API.GetAdrenalineFromInterface() > extraAbilities.devotionAbility.threshold and 
+        not API.Buffbar_GetIDstatus(extraAbilities.devotionAbility.buffId).found then
+        API.DoAction_Ability_check(extraAbilities.devotionAbility.name, 1, API.OFF_ACT_GeneralInterface_route, true, true, true)
+        sleepTickRandom(2)
+    end
+end
+
+local function useDebilitateAbility()
+    if extraAbilities.debilitateAbility.AB.id > 0 and   
+        extraAbilities.debilitateAbility.AB.enabled and
+        API.GetAdrenalineFromInterface() > extraAbilities.debilitateAbility.threshold then
+        local hasDebilitate = false
+        for _,value in ipairs(API.ReadTargetInfo(true).Buff_stack) do
+            if value == extraAbilities.debilitateAbility.debuffId then
+                hasDebilitate = true
+            end
+        end
+        if not hasDebilitate then
+            API.DoAction_Ability_check(extraAbilities.debilitateAbility.name, 1, API.OFF_ACT_GeneralInterface_route, true, true, true)
+            sleepTickRandom(2)
+        end
+    end
+end
+
 local function eatFood()
     if not Inventory:ContainsAny(foodItems) or 
     API.GetHPrecent() >= hpThreshold or 
@@ -456,8 +520,12 @@ local function prepareForBattle()
     log("Withdraw last quick preset")
     API.DoAction_Object1(0x33, API.OFF_ACT_GeneralObject_route3, { 114750 }, 50)
     API.WaitUntilMovingEnds(10, 4)
+    checkAvailableBuffs()
+    sleepTickRandom(1)
+    log(string.format("Do we have the following buffs: \nOverloads: %s\nWeaponPoison %s\nDebilitate %s\nDevotion %s\nDarkness %s\nInvoke Death %s",
+        hasOverload, hasWeaponPoison, hasDebilitate, hasDevotion, hasDarkness, hasInvokeDeath))
     if not Inventory:ContainsAny(foodItems) then
-        log("No food items in inventory")
+        log("No food items in inventory", "WARN")
         stopScript()
     end
     isPrepared = true
@@ -511,41 +579,10 @@ local function checkKerapacExists()
     end
 end
 
-local function dodgeLightning()
-    local findObjects = API.GetAllObjArray1({28071, 9216}, 60, {1})
-    local boltsNearPlayer = {}
-    for i = 1, #findObjects do
-        if findObjects[i].Distance < distanceThreshold then
-            table.insert(boltsNearPlayer, findObjects[i])
-        end
-    end
-    if API.Get_tick() - avoidLightningTicks > dodgeCooldown and #boltsNearPlayer > 0 then 
-        local directionOfBolt = calculateDirectionVector(boltsNearPlayer[1].Tile_XYZ, centerOfArenaPosition)
-        local normalizedFFPOINT = normalizeVector(directionOfBolt)
-        local roundedFFPOINT = roundVectorToInts(normalizedFFPOINT)
-        local surgeAB = API.GetABs_name("Surge")
-        local BDiveAB = API.GetABs_name("Bladed Dive")
-        local DiveAB = API.GetABs_name("Dive")
-        if (BDiveAB.cooldown_timer > 0 or DiveAB.cooldown_timer > 0) then
-            API.DoAction_TileF(FFPOINT.new(boltsNearPlayer[1].Tile_XYZ.x + (roundedFFPOINT.x * -10), boltsNearPlayer[1].Tile_XYZ.y + (roundedFFPOINT.y * -10), 0))
-            API.RandomSleep2(1, 120, 0)
-            API.DoAction_Ability_Direct(surgeAB, 1, API.OFF_ACT_GeneralInterface_route)
-        elseif not API.DoAction_Dive_Tile(WPOINT.new(boltsNearPlayer[1].Tile_XYZ.x + (roundedFFPOINT.x * -10), boltsNearPlayer[1].Tile_XYZ.y + (roundedFFPOINT.y * -10), 0)) then
-            API.DoAction_BDive_Tile(WPOINT.new(boltsNearPlayer[1].Tile_XYZ.x + (roundedFFPOINT.x * -10), boltsNearPlayer[1].Tile_XYZ.y + (roundedFFPOINT.y * -10), 0))
-        end  
-        print("Dodged lightning")
-        avoidLightningTicks = API.Get_tick()
-    end
-end
-
 local function startPhaseTransition()
-    if startLocationOfArena then
-        API.DoAction_TileF(startLocationOfArena)
-    end
     kerapacPhase = kerapacPhase + 1
     isPhasing = true
     log("Entering Phase " .. kerapacPhase)
-    API.WaitUntilMovingEnds(10, 4)
 end
 
 local function endPhaseTransition()
@@ -555,7 +592,7 @@ local function endPhaseTransition()
 end
 
 local function handlePhaseTransitions(bossLife)
-    if bossLife <= phaseTransitionThreshold and kerapacPhase < 3 and not isPhasing then
+    if bossLife <= phaseTransitionThreshold and kerapacPhase < 4 and not isPhasing then
         startPhaseTransition()
     elseif bossLife > phaseTransitionThreshold and isPhasing then
         endPhaseTransition()
@@ -572,16 +609,38 @@ local function handleBossLoot()
             sleepTickRandom(3)
         end
         if API.LootWindowOpen_2() and (API.LootWindow_GetData()[1].itemid1 > 0) and not isLooted then 
-            log("Looting")
-            API.DoAction_LootAll_Button()
+            local lootInterface = API.ScanForInterfaceTest2Get(true, { { 1622,4,-1,0 }, { 1622,6,-1,0 }, { 1622,1,-1,0 }, { 1622,11,-1,0 } })
+            local lootInWindow = {}
+            for _,value in ipairs(lootInterface) do
+                if value.itemid1 ~= -1 then
+                    table.insert(lootInWindow, value.itemid1)
+                end
+            end
+            local inventorySlotsRemaining = Inventory:FreeSpaces() - #lootInWindow
             sleepTickRandom(2)
-            isLooted = true
-            -- TODO IMPLEMENT LOGIC TO VALIDATE INVENTORY FOR FREE SPACES AND DROP FOOD TO COLLECT ALL LOOT
+            if inventorySlotsRemaining < 0 then
+                local slotsNeeded = -inventorySlotsRemaining
+                log("Need to free " .. slotsNeeded .. " slots to collect all loot")
+                for i = 1, slotsNeeded do
+                    local foodItem = whichFood()
+                    if foodItem ~= "" then
+                        log("Eating " .. foodItem .. " to make room for loot (" .. slotsNeeded .. ")")
+                        Inventory:Eat(foodItem)
+                        sleepTickRandom(3)
+                    else
+                        log("No more food items to drop, can't collect all loot")
+                        break
+                    end
+                end
+            else
+                log("Get loot")
+                API.DoAction_LootAll_Button()
+                isLooted = true
+            end
         end
         sleepTickRandom(1)
     end
 end
-
 local function handleBossDeath()
     disableMagePray()
     disablePassivePrayer()
@@ -621,12 +680,19 @@ local function handleBossReset()
     isLooted = false
     isPortalUsed = false
     isPhasing = false
+    isMovedToCenter = false
+    hasOverload = false
+    hasWeaponPoison = false
+    hasDebilitate = false
+    hasDevotion = false
+    hasDarkness = false
+    hasInvokeDeath = false
     kerapacPhase = 1
     log("Let's go again")
 end
 
 local function handleCombat(state)
-    if (isFightStarted) and not isPhasing then
+    if (isFightStarted) then
         if state == bossStateEnum.TEAR_RIFT_ATTACK_COMMENCE.name and not isRiftDodged then
             API.DoAction_TileF(getKerapacPositionFFPOINT())
             isRiftDodged = true
@@ -640,10 +706,10 @@ local function handleCombat(state)
         if state == bossStateEnum.JUMP_ATTACK_COMMENCE.name and isJumpDodged then
             isJumpDodged = false
             attackKerapac()
-            enableMeleePray()
             log("Preparing for jump attack")
         end
         if state == bossStateEnum.JUMP_ATTACK_IN_AIR.name and not isJumpDodged then
+            enableMeleePray()
             isJumpDodged = true
             attackKerapac()
             sleepTickRandom(1)
@@ -652,7 +718,11 @@ local function handleCombat(state)
             sleepTickRandom(1)
             attackKerapac()
             log("Dodge jump attack")
+            sleepTickRandom(2)
             enableMagePray()
+        end
+        if state == bossStateEnum.LIGHTNING_ATTACK.name then
+            log("try to move")
         end
     end
 end
@@ -669,11 +739,80 @@ local function handleStateChange(currentAnimation)
     end
 end
 
+local function dodgeLightning()
+    local allLightningObjects = API.GetAllObjArray1({28071, 9216}, 60, {1})
+    local inDanger = false
+    local closestBolt = nil
+    local minDistance = 30
+    
+    for i = 1, #allLightningObjects do
+        if allLightningObjects[i].Distance < distanceThreshold then
+            inDanger = true
+            if allLightningObjects[i].Distance < minDistance then
+                minDistance = allLightningObjects[i].Distance
+                closestBolt = allLightningObjects[i]
+            end
+        end
+    end
+
+    if inDanger and API.Get_tick() - avoidLightningTicks > dodgeCooldown and closestBolt then
+        local playerPosition = API.PlayerCoord()
+        local dirX = playerPosition.x - closestBolt.Tile_XYZ.x
+        local dirY = playerPosition.y - closestBolt.Tile_XYZ.y
+        local length = math.sqrt(dirX*dirX + dirY*dirY)
+        if length > 0 then
+            dirX = dirX / length
+            dirY = dirY / length
+        else
+            dirX = 1
+            dirY = 0
+        end
+        
+        local safeWPOINT = WPOINT.new(
+            playerPosition.x + (dirX * dodgeDistance),
+            playerPosition.y + (dirY * dodgeDistance),
+            playerPosition.z
+        )
+        
+        local safeFFPOINT = FFPOINT.new(safeWPOINT.x, safeWPOINT.y, 0)
+        local surgeAB = API.GetABs_name("Surge")
+        local BDiveAB = API.GetABs_name("Bladed Dive")
+        local DiveAB = API.GetABs_name("Dive")
+        
+        if (BDiveAB.cooldown_timer > 0 or DiveAB.cooldown_timer > 0) then
+            API.DoAction_TileF(safeFFPOINT)
+            API.RandomSleep2(1, 120, 0)
+            API.DoAction_Ability_Direct(surgeAB, 1, API.OFF_ACT_GeneralInterface_route)
+        elseif not API.DoAction_Dive_Tile(safeWPOINT) then
+            API.DoAction_BDive_Tile(safeWPOINT)
+        end
+        
+        log("Dodged lightning at distance " .. minDistance)
+        avoidLightningTicks = API.Get_tick()
+    end
+end
+
 local function managePlayer()
     dodgeLightning()
     eatFood()
-    drinkOverload()
-    drinkWeaponPoison()
+    if hasOverload then
+        drinkOverload()
+    end
+    if hasWeaponPoison then
+        drinkWeaponPoison()
+    end
+    if hasDebilitate then
+        useDebilitateAbility()
+    end
+    if hasDevotion then
+        useDevotionAbility()
+    end
+    if hasDarkness then
+        useDarkness()
+    end
+    if hasInvokeDeath then
+        useInvokeDeath()
+    end
     drinkPrayer()
     enablePassivePrayer()
     playerDied()
