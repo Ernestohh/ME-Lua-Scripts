@@ -1,4 +1,4 @@
-local version = "3.6"
+local version = "3.7"
 local API = require("api")
 API.SetDrawLogs(true)
 
@@ -49,6 +49,7 @@ local foodItems={"Lobster","Swordfish","Desert sole","Catfish","Monkfish","Beltf
 local prayerRestoreItems={"Super restore (4)","Super restore (3)","Super restore (2)","Super restore (1)","Super restore flask (6)","Super restore flask (5)","Super restore flask (4)","Super restore flask (3)","Super restore flask (2)","Super restore flask (1)","Prayer potion (1)","Prayer potion (2)","Prayer potion (3)","Prayer potion (4)","Prayer flask (1)","Prayer flask (2)","Prayer flask (3)","Prayer flask (4)","Prayer flask (5)","Prayer flask (6)","Super prayer (1)","Super prayer (2)","Super prayer (3)","Super prayer (4)","Super prayer flask (1)","Super prayer flask (2)","Super prayer flask (3)","Super prayer flask (4)","Super prayer flask (5)","Super prayer flask (6)","Extreme prayer (1)","Extreme prayer (2)","Extreme prayer (3)","Extreme prayer (4)","Extreme prayer flask (1)","Extreme prayer flask (2)","Extreme prayer flask (3)","Extreme prayer flask (4)","Extreme prayer flask (5)","Extreme prayer flask (6)"}
 local overloadItems={"Overload (4)","Overload (3)","Overload (2)","Overload (1)","Overload Flask (6)","Overload Flask (5)","Overload Flask (4)","Overload Flask (3)","Overload Flask (2)","Overload Flask (1)","Holy overload (6)","Holy overload (5)","Holy overload (4)","Holy overload (3)","Holy overload (2)","Holy overload (1)","Searing overload (6)","Searing overload (5)","Searing overload (4)","Searing overload (3)","Searing overload (2)","Searing overload (1)","Overload salve (6)","Overload salve (5)","Overload salve (4)","Overload salve (3)","Overload salve (2)","Overload salve (1)","Aggroverload (6)","Aggroverload (5)","Aggroverload (4)","Aggroverload (3)","Aggroverload (2)","Aggroverload (1)","Holy aggroverload (6)","Holy aggroverload (5)","Holy aggroverload (4)","Holy aggroverload (3)","Holy aggroverload (2)","Holy aggroverload (1)","Supreme overload salve (6)","Supreme overload salve (5)","Supreme overload salve (4)","Supreme overload salve (3)","Supreme overload salve (2)","Supreme overload salve (1)","Elder overload potion (6)","Elder overload potion (5)","Elder overload potion (4)","Elder overload potion (3)","Elder overload potion (2)","Elder overload potion (1)","Elder overload salve (6)","Elder overload salve (5)","Elder overload salve (4)","Elder overload salve (3)","Elder overload salve (2)","Elder overload salve (1)","Supreme overload potion (1)","Supreme overload potion (2)","Supreme overload potion (3)","Supreme overload potion (4)","Supreme overload potion (5)","Supreme overload potion (6)"}
 local weaponPoisonItems={"Weapon poison (1)","Weapon poison (2)","Weapon poison (3)","Weapon poison (4)","Weapon poison+ (1)","Weapon poison+ (2)","Weapon poison+ (3)","Weapon poison+ (4)","Weapon poison++ (1)","Weapon poison++ (2)","Weapon poison++ (3)","Weapon poison++ (4)","Weapon poison+++ (1)","Weapon poison+++ (2)","Weapon poison+++ (3)","Weapon poison+++ (4)","Weapon poison flask (1)","Weapon poison flask (2)","Weapon poison flask (3)","Weapon poison flask (4)","Weapon poison flask (5)","Weapon poison flask (6)","Weapon poison+ flask (1)","Weapon poison+ flask (2)","Weapon poison+ flask (3)","Weapon poison+ flask (4)","Weapon poison+ flask (5)","Weapon poison+ flask (6)","Weapon poison++ flask (1)","Weapon poison++ flask (2)","Weapon poison++ flask (3)","Weapon poison++ flask (4)","Weapon poison++ flask (5)","Weapon poison++ flask (6)","Weapon poison+++ flask (1)","Weapon poison+++ flask (2)","Weapon poison+++ flask (3)","Weapon poison+++ flask (4)","Weapon poison+++ flask (5)","Weapon poison+++ flask (6)"}
+local summoningPouches ={"Blood nihil pouch", "Ice nihil pouch", "Shadow nihil pouch", "Smoke nihil pouch", "Binding contract (ripper demon)", "Binding contract (kal'gerion demon)", "Binding contract (blood reaver)", "Binding contract (hellhound)"}
 
 local sortedFoods = {}
 for _, v in ipairs(foodItems) do
@@ -125,6 +126,8 @@ local kerapacPhase = 1
 local avoidLightningTicks = API.Get_tick()
 local eatFoodTicks = API.Get_tick()
 local drinkRestoreTicks = API.Get_tick()
+local buffCheckCooldown = API.Get_tick()
+local checkPlayerCooldown = API.Get_tick()
 local hpThreshold= 70
 local prayerThreshold = 30
 local distanceThreshold = 5
@@ -407,43 +410,46 @@ local function useDarkness()
         extraAbilities.darknessAbility.AB.enabled and 
         not API.Buffbar_GetIDstatus(extraAbilities.darknessAbility.buffId).found then
         API.DoAction_Ability_check(extraAbilities.darknessAbility.name, 1, API.OFF_ACT_GeneralInterface_route, true, true, true)
+        log("Concealing myself in the shadows")
         sleepTickRandom(2)
     end
 end
 
 local function useInvokeDeath()
-    if extraAbilities.invokeDeathAbility.AB.id > 0 and 
-        extraAbilities.invokeDeathAbility.AB.enabled and 
+    if  hasInvokeDeath and
         not hasMarkOfDeath() and
         not hasDeathInvocation() and 
         getKerapacInformation().Life > 15000 then
         API.DoAction_Ability_check(extraAbilities.invokeDeathAbility.name, 1, API.OFF_ACT_GeneralInterface_route, true, true, true)
+        log("Die die die")
         sleepTickRandom(2)
     end
 end
 
 local function useDevotionAbility()
-    if extraAbilities.devotionAbility.AB.id > 0 and 
-        extraAbilities.devotionAbility.AB.enabled and 
+    if  hasDevotion and
         API.GetAdrenalineFromInterface() > extraAbilities.devotionAbility.threshold and 
         not API.Buffbar_GetIDstatus(extraAbilities.devotionAbility.buffId).found then
-        API.DoAction_Ability_check(extraAbilities.devotionAbility.name, 1, API.OFF_ACT_GeneralInterface_route, true, true, true)
+            if API.DoAction_Ability_check(extraAbilities.devotionAbility.name, 1, API.OFF_ACT_GeneralInterface_route, true, true, true) then
+                log("Please protect me")
+            end
         sleepTickRandom(2)
     end
 end
 
 local function useDebilitateAbility()
-    if extraAbilities.debilitateAbility.AB.id > 0 and   
-        extraAbilities.debilitateAbility.AB.enabled and
+    if  hasDebilitate and
         API.GetAdrenalineFromInterface() > extraAbilities.debilitateAbility.threshold then
-        local hasDebilitate = false
+        local hasDebilitateDebuff = false
         for _,value in ipairs(API.ReadTargetInfo(true).Buff_stack) do
             if value == extraAbilities.debilitateAbility.debuffId then
-                hasDebilitate = true
+                hasDebilitateDebuff = true
             end
         end
-        if not hasDebilitate then
-            API.DoAction_Ability_check(extraAbilities.debilitateAbility.name, 1, API.OFF_ACT_GeneralInterface_route, true, true, true)
+        if not hasDebilitateDebuff then
+            if API.DoAction_Ability_check(extraAbilities.debilitateAbility.name, 1, API.OFF_ACT_GeneralInterface_route, true, true, true) then
+                log("Kick in the nuts for more defense")
+            end
             sleepTickRandom(2)
         end
     end
@@ -708,9 +714,9 @@ local function handleCombat(state)
             isJumpDodged = false
             attackKerapac()
             log("Preparing for jump attack")
+            enableMeleePray()
         end
         if state == bossStateEnum.JUMP_ATTACK_IN_AIR.name and not isJumpDodged then
-            enableMeleePray()
             isJumpDodged = true
             attackKerapac()
             sleepTickRandom(1)
@@ -731,18 +737,6 @@ local function handleCombat(state)
         if state == bossStateEnum.LIGHTNING_ATTACK.name then
             log("try to move")
         end
-    end
-end
-
-local function handleStateChange(currentAnimation)
-    local newState = getBossStateFromAnimation(currentAnimation)
-    if newState == nil then
-        return
-    end
-    if newState ~= currentState then
-        log("State changed to: " .. bossStateEnum[newState].name)
-        currentState = newState
-        handleCombat(newState)
     end
 end
 
@@ -800,8 +794,17 @@ local function dodgeLightning()
 end
 
 local function managePlayer()
-    dodgeLightning()
+    if API.Get_tick() - checkPlayerCooldown <= 3 then return end
     eatFood()
+    drinkPrayer()
+    enablePassivePrayer()
+    playerDied()
+    checkPlayerCooldown = API.Get_tick()
+end
+
+local function manageBuffs()
+    if API.Get_tick() - buffCheckCooldown <= 30 then return end
+
     if hasOverload then
         drinkOverload()
     end
@@ -820,9 +823,22 @@ local function managePlayer()
     if hasInvokeDeath then
         useInvokeDeath()
     end
-    drinkPrayer()
-    enablePassivePrayer()
-    playerDied()
+    buffCheckCooldown = API.Get_tick()
+end
+
+local function handleStateChange(currentAnimation)
+    local newState = getBossStateFromAnimation(currentAnimation)
+    if newState == nil then
+        return
+    end
+    if newState ~= currentState then
+        log("State changed to: " .. bossStateEnum[newState].name)
+        currentState = newState
+        handleCombat(newState)
+        dodgeLightning()
+        managePlayer()
+        manageBuffs()
+    end
 end
 
 local function HandleStartButton()
@@ -882,7 +898,6 @@ while (API.Read_LoopyLoop()) do
                 checkKerapacExists()
             end
         elseif isInBattle then
-            managePlayer()
             handleStateChange(getKerapacAnimation())
             handleBossPhase()
         elseif isTimeToLoot and not isLooted then
