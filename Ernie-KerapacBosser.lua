@@ -1,4 +1,4 @@
-local version = "3.5"
+local version = "3.6"
 local API = require("api")
 API.SetDrawLogs(true)
 
@@ -9,8 +9,8 @@ local OBJECTS_table = API.ReadAllObjectsArray({-1}, {-1}, {})
 local extraAbilities = {
     devotionAbility = {name = "Devotion", buffId = 21665, AB = API.GetABs_name("Devotion"), threshold = 50},
     debilitateAbility = {name = "Debilitate", debuffId = 14226, AB = API.GetABs_name("Debilitate"), threshold = 50},
-    darknessAbility = {name = "Darkness", debuffId = 14226, AB = API.GetABs_name("Darkness"), threshold = 0},
-    invokeDeathAbility = {name = "Invoke Death", debuffId = 14226, AB = API.GetABs_name("Invoke Death"), threshold = 0}
+    darknessAbility = {name = "Darkness", buffId = 30122, AB = API.GetABs_name("Darkness"), threshold = 0},
+    invokeDeathAbility = {name = "Invoke Death", debuffId = 30100, AB = API.GetABs_name("Invoke Death"), threshold = 0}
 }
 
 
@@ -93,6 +93,7 @@ local bossStateEnum = {
     TEAR_RIFT_ATTACK_MOVE = { name = "TEAR_RIFT_ATTACK_MOVE", animations = { 34199 } },
     JUMP_ATTACK_COMMENCE = { name = "JUMP_ATTACK_COMMENCE", animations = { 34193 } },
     JUMP_ATTACK_IN_AIR = { name = "JUMP_ATTACK_IN_AIR", animations = { 34194 } },
+    JUMP_ATTACK_LANDED = {name = "JUMP_ATTACK_LANDED", animations = {34195}},
     LIGHTNING_ATTACK = { name = "LIGHTNING_ATTACK", animations = { 34197 } }
 }
 
@@ -721,6 +722,12 @@ local function handleCombat(state)
             sleepTickRandom(2)
             enableMagePray()
         end
+        if state == bossStateEnum.JUMP_ATTACK_LANDED and getKerapacInformation().Distance < 4 then
+            API.DoAction_TileF(centerOfArenaPosition)
+            sleepTickRandom(1)
+            local surgeAB = API.GetABs_name("Surge")
+            API.DoAction_Ability_Direct(surgeAB, 1, API.OFF_ACT_GeneralInterface_route)
+        end
         if state == bossStateEnum.LIGHTNING_ATTACK.name then
             log("try to move")
         end
@@ -855,6 +862,7 @@ log("Started Ernie's Kerapac Bosser " .. version)
 API.Write_LoopyLoop(true)
 while (API.Read_LoopyLoop()) do
     DrawGui()
+    getBossStateFromAnimation(getKerapacAnimation())
     if startScript then
         if not isInBattle and not isTimeToLoot then
             if not isInWarsRetreat then
