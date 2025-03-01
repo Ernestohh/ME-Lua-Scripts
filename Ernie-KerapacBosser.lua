@@ -1,4 +1,4 @@
-local version = "3.7"
+local version = "3.8"
 local API = require("api")
 API.SetDrawLogs(true)
 
@@ -45,7 +45,7 @@ local passiveBuffs = {
     None = {name = "None", buffId = nil, AB = nil, type = nil} 
 }
 
-local foodItems={"Lobster","Swordfish","Desert sole", "Ghostly sole", "Catfish","Monkfish","Beltfish","Ghostly sole","Cooked eeligator","Shark","Sea turtle","Great white shark","Cavefish","Manta ray","Rocktail","Tiger shark","Sailfish","Green blubber jellyfish","Blue blubber jellyfish","2/3 green blubber jellyfish","2/3 blue blubber jellyfish","1/3 green blubber jellyfish","1/3 blue blubber jellyfish","Potato with cheese","Tuna potato","Baron shark","Juju gumbo","Great maki","Great gunkan","Rocktail soup","Sailfish soup","Fury shark","Primal feast"}
+local foodItems={"Lobster","Swordfish","Desert sole","Catfish","Monkfish","Beltfish","Ghostly sole","Cooked eeligator","Shark","Sea turtle","Great white shark","Cavefish","Manta ray","Rocktail","Tiger shark","Sailfish","Green blubber jellyfish","Blue blubber jellyfish","2/3 green blubber jellyfish","2/3 blue blubber jellyfish","1/3 green blubber jellyfish","1/3 blue blubber jellyfish","Potato with cheese","Tuna potato","Baron shark","Juju gumbo","Great maki","Great gunkan","Rocktail soup","Sailfish soup","Fury shark","Primal feast"}
 local prayerRestoreItems={"Super restore (4)","Super restore (3)","Super restore (2)","Super restore (1)","Super restore flask (6)","Super restore flask (5)","Super restore flask (4)","Super restore flask (3)","Super restore flask (2)","Super restore flask (1)","Prayer potion (1)","Prayer potion (2)","Prayer potion (3)","Prayer potion (4)","Prayer flask (1)","Prayer flask (2)","Prayer flask (3)","Prayer flask (4)","Prayer flask (5)","Prayer flask (6)","Super prayer (1)","Super prayer (2)","Super prayer (3)","Super prayer (4)","Super prayer flask (1)","Super prayer flask (2)","Super prayer flask (3)","Super prayer flask (4)","Super prayer flask (5)","Super prayer flask (6)","Extreme prayer (1)","Extreme prayer (2)","Extreme prayer (3)","Extreme prayer (4)","Extreme prayer flask (1)","Extreme prayer flask (2)","Extreme prayer flask (3)","Extreme prayer flask (4)","Extreme prayer flask (5)","Extreme prayer flask (6)"}
 local overloadItems={"Overload (4)","Overload (3)","Overload (2)","Overload (1)","Overload Flask (6)","Overload Flask (5)","Overload Flask (4)","Overload Flask (3)","Overload Flask (2)","Overload Flask (1)","Holy overload (6)","Holy overload (5)","Holy overload (4)","Holy overload (3)","Holy overload (2)","Holy overload (1)","Searing overload (6)","Searing overload (5)","Searing overload (4)","Searing overload (3)","Searing overload (2)","Searing overload (1)","Overload salve (6)","Overload salve (5)","Overload salve (4)","Overload salve (3)","Overload salve (2)","Overload salve (1)","Aggroverload (6)","Aggroverload (5)","Aggroverload (4)","Aggroverload (3)","Aggroverload (2)","Aggroverload (1)","Holy aggroverload (6)","Holy aggroverload (5)","Holy aggroverload (4)","Holy aggroverload (3)","Holy aggroverload (2)","Holy aggroverload (1)","Supreme overload salve (6)","Supreme overload salve (5)","Supreme overload salve (4)","Supreme overload salve (3)","Supreme overload salve (2)","Supreme overload salve (1)","Elder overload potion (6)","Elder overload potion (5)","Elder overload potion (4)","Elder overload potion (3)","Elder overload potion (2)","Elder overload potion (1)","Elder overload salve (6)","Elder overload salve (5)","Elder overload salve (4)","Elder overload salve (3)","Elder overload salve (2)","Elder overload salve (1)","Supreme overload potion (1)","Supreme overload potion (2)","Supreme overload potion (3)","Supreme overload potion (4)","Supreme overload potion (5)","Supreme overload potion (6)"}
 local weaponPoisonItems={"Weapon poison (1)","Weapon poison (2)","Weapon poison (3)","Weapon poison (4)","Weapon poison+ (1)","Weapon poison+ (2)","Weapon poison+ (3)","Weapon poison+ (4)","Weapon poison++ (1)","Weapon poison++ (2)","Weapon poison++ (3)","Weapon poison++ (4)","Weapon poison+++ (1)","Weapon poison+++ (2)","Weapon poison+++ (3)","Weapon poison+++ (4)","Weapon poison flask (1)","Weapon poison flask (2)","Weapon poison flask (3)","Weapon poison flask (4)","Weapon poison flask (5)","Weapon poison flask (6)","Weapon poison+ flask (1)","Weapon poison+ flask (2)","Weapon poison+ flask (3)","Weapon poison+ flask (4)","Weapon poison+ flask (5)","Weapon poison+ flask (6)","Weapon poison++ flask (1)","Weapon poison++ flask (2)","Weapon poison++ flask (3)","Weapon poison++ flask (4)","Weapon poison++ flask (5)","Weapon poison++ flask (6)","Weapon poison+++ flask (1)","Weapon poison+++ flask (2)","Weapon poison+++ flask (3)","Weapon poison+++ flask (4)","Weapon poison+++ flask (5)","Weapon poison+++ flask (6)"}
@@ -835,9 +835,6 @@ local function handleStateChange(currentAnimation)
         log("State changed to: " .. bossStateEnum[newState].name)
         currentState = newState
         handleCombat(newState)
-        dodgeLightning()
-        managePlayer()
-        manageBuffs()
     end
 end
 
@@ -900,6 +897,9 @@ while (API.Read_LoopyLoop()) do
         elseif isInBattle then
             handleStateChange(getKerapacAnimation())
             handleBossPhase()
+            dodgeLightning()
+            managePlayer()
+            manageBuffs()
         elseif isTimeToLoot and not isLooted then
             handleBossLoot()
         elseif isLooted then
