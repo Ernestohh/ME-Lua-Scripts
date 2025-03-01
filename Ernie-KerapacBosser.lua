@@ -1,4 +1,4 @@
-local version = "4.0"
+local version = "4.1"
 local API = require("api")
 API.SetDrawLogs(true)
 
@@ -108,6 +108,9 @@ for _, v in ipairs(weaponPoisonItems) do
 end
 table.sort(sortedWeaponPoison)
 
+local surgeAB = API.GetABs_name("Surge")
+local BDiveAB = API.GetABs_name("Bladed Dive")
+local DiveAB = API.GetABs_name("Dive")
 local extraAbilities = {
     devotionAbility = {
         name = "Devotion", 
@@ -333,12 +336,12 @@ local buffCheckCooldown = API.Get_tick()
 local previousStrikes = {}
 local currentStrikes = {}
 local movementVector = {x = 0, y = 0}
-local dodgeDistance = -10
+local dodgeDistance = -8
 local lastDodgeTime = 0
-local dodgeCooldown = 4
+local dodgeCooldown = 6
 local detectionCooldown = 2
 local lastDetectionTime = 0
-local proximityThreshold = 5
+local proximityThreshold = 6
 local trackingInitialized = false
 
 local lightningDetectionCooldown = 5
@@ -624,7 +627,7 @@ function findLightningHotspot()
         return nil
     end
     
-    local clusterRadius = 8
+    local clusterRadius = 12
     local hotspot = nil
     local maxNearbyCount = 0
     
@@ -740,9 +743,6 @@ function dodgeLightning()
         log("EXECUTING DODGE to position: " .. dodgePos.x .. ", " .. dodgePos.y)
         
         local safeFFPOINT = FFPOINT.new(dodgePos.x, dodgePos.y, 0)
-        local surgeAB = API.GetABs_name("Surge")
-        local BDiveAB = API.GetABs_name("Bladed Dive")
-        local DiveAB = API.GetABs_name("Dive")
         
         if (BDiveAB.cooldown_timer > 0 or DiveAB.cooldown_timer > 0) then
             API.DoAction_TileF(safeFFPOINT)
@@ -1234,7 +1234,9 @@ function handleCombat(state)
         end
         
         if state == bossStateEnum.TEAR_RIFT_ATTACK_COMMENCE.name and not isRiftDodged then
-            if getKerapacInformation().Distance < 5 then
+            if getKerapacInformation().Distance < 5 or 
+            not (DiveAB.enabled and not BDiveAB.enabled) and 
+            not (BDiveAB.cooldown_timer > 0 or DiveAB.cooldown_timer > 0) then
                 API.DoAction_TileF(getKerapacPositionFFPOINT())
             elseif not API.DoAction_Dive_Tile(WPOINT.new(getKerapacPositionFFPOINT().x, getKerapacPositionFFPOINT().y,0)) then
                 API.DoAction_BDive_Tile(WPOINT.new(getKerapacPositionFFPOINT().x, getKerapacPositionFFPOINT().y,0))
