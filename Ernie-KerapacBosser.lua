@@ -744,7 +744,8 @@ function dodgeLightning()
         
         local safeFFPOINT = FFPOINT.new(dodgePos.x, dodgePos.y, 0)
         
-        if (BDiveAB.cooldown_timer > 0 or DiveAB.cooldown_timer > 0) then
+        if (BDiveAB.cooldown_timer > 0 or DiveAB.cooldown_timer > 0) or 
+        not (BDiveAB.enabled and not DiveAB.enabled) then
             API.DoAction_TileF(safeFFPOINT)
             API.RandomSleep2(1, 120, 0)
             API.DoAction_Ability_Direct(surgeAB, 1, API.OFF_ACT_GeneralInterface_route)
