@@ -338,7 +338,7 @@ local lastDodgeTime = 0
 local dodgeCooldown = 4
 local detectionCooldown = 2
 local lastDetectionTime = 0
-local proximityThreshold = 6
+local proximityThreshold = 5
 local trackingInitialized = false
 
 local lightningDetectionCooldown = 5
@@ -1236,8 +1236,8 @@ function handleCombat(state)
         if state == bossStateEnum.TEAR_RIFT_ATTACK_COMMENCE.name and not isRiftDodged then
             if getKerapacInformation().Distance < 5 then
                 API.DoAction_TileF(getKerapacPositionFFPOINT())
-            elseif not API.DoAction_Dive_Tile(getKerapacPositionFFPOINT()) then
-                API.DoAction_BDive_Tile(getKerapacPositionFFPOINT())
+            elseif not API.DoAction_Dive_Tile(WPOINT.new(getKerapacPositionFFPOINT().x, getKerapacPositionFFPOINT().y,0)) then
+                API.DoAction_BDive_Tile(WPOINT.new(getKerapacPositionFFPOINT().x, getKerapacPositionFFPOINT().y,0))
             end
             enableMagePray()
             isRiftDodged = true
