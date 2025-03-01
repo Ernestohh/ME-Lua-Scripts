@@ -1,4 +1,4 @@
-local version = "4.1"
+local version = "4.2"
 local API = require("api")
 API.SetDrawLogs(true)
 
@@ -297,6 +297,7 @@ end
 table.sort(sortedPassiveKeys)
 
 local startScript = false
+local guiVisible = true
 local selectedPrayerType = API.VB_FindPSettinOrder(3277, 0).state & 1
 local selectedPassive = nil
 
@@ -1330,7 +1331,10 @@ function HandleStartButton()
             elseif selectedPrayerType == 1 then
                 selectedPrayerType = "Curses"  
             end
-            
+            Background.remove = true
+            StartButton.remove = true
+            PassivesDropdown.remove = true
+            guiVisible = false
             log("Script started")
             log("Selected Prayer Type: " .. (selectedPrayerType or "None"))
             log("Selected Passive: " .. (selectedPassive or "None"))
@@ -1357,8 +1361,9 @@ log("Started Ernie's Kerapac Bosser " .. version)
 API.Write_LoopyLoop(true)
 
 while (API.Read_LoopyLoop()) do
-    DrawGui()
-    
+    if guiVisible then
+        DrawGui() 
+    end
     if startScript then
         if not isInBattle and not isTimeToLoot then
             if not isInWarsRetreat then
@@ -1382,11 +1387,11 @@ while (API.Read_LoopyLoop()) do
                 checkKerapacExists()
             end
         elseif isInBattle and API.Read_LoopyLoop() then
-            handleStateChange(getKerapacAnimation())
-            handleBossPhase()
-            updateLightningTracker()
             managePlayer()
             manageBuffs()
+            updateLightningTracker()
+            handleStateChange(getKerapacAnimation())
+            handleBossPhase()
         elseif isTimeToLoot and not isLooted and API.Read_LoopyLoop() then
             handleBossLoot()
         elseif isLooted and API.Read_LoopyLoop() then
