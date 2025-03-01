@@ -1,4 +1,4 @@
-local version = "3.7"
+local version = "3.9"
 local API = require("api")
 API.SetDrawLogs(true)
 
@@ -588,6 +588,7 @@ end
 
 local function startPhaseTransition()
     kerapacPhase = kerapacPhase + 1
+    LightningDodge.resetPhase(kerapacPhase)
     isPhasing = true
     log("Entering Phase " .. kerapacPhase)
 end
@@ -725,7 +726,6 @@ local function handleCombat(state)
             sleepTickRandom(1)
             attackKerapac()
             log("Dodge jump attack")
-            sleepTickRandom(2)
             enableMagePray()
         end
         if state == bossStateEnum.JUMP_ATTACK_LANDED.name and getKerapacInformation().Distance < 4 then
@@ -733,14 +733,17 @@ local function handleCombat(state)
             sleepTickRandom(1)
             local surgeAB = API.GetABs_name("Surge")
             API.DoAction_Ability_Direct(surgeAB, 1, API.OFF_ACT_GeneralInterface_route)
+            sleepTickRandom(1)
+            attackKerapac()
         end
         if state == bossStateEnum.LIGHTNING_ATTACK.name then
-            log("try to move")
+            --IMPLEMENT
         end
     end
 end
 
-local function dodgeLightning()
+
+local function dodgeLightning2()
     local allLightningObjects = API.GetAllObjArray1({28071, 9216}, 60, {1})
     local inDanger = false
     local closestBolt = nil
@@ -794,12 +797,10 @@ local function dodgeLightning()
 end
 
 local function managePlayer()
-    if API.Get_tick() - checkPlayerCooldown <= 3 then return end
     eatFood()
     drinkPrayer()
     enablePassivePrayer()
     playerDied()
-    checkPlayerCooldown = API.Get_tick()
 end
 
 local function manageBuffs()
@@ -835,9 +836,6 @@ local function handleStateChange(currentAnimation)
         log("State changed to: " .. bossStateEnum[newState].name)
         currentState = newState
         handleCombat(newState)
-        dodgeLightning()
-        managePlayer()
-        manageBuffs()
     end
 end
 
@@ -878,7 +876,6 @@ log("Started Ernie's Kerapac Bosser " .. version)
 API.Write_LoopyLoop(true)
 while (API.Read_LoopyLoop()) do
     DrawGui()
-    getBossStateFromAnimation(getKerapacAnimation())
     if startScript then
         if not isInBattle and not isTimeToLoot then
             if not isInWarsRetreat then
@@ -900,6 +897,9 @@ while (API.Read_LoopyLoop()) do
         elseif isInBattle then
             handleStateChange(getKerapacAnimation())
             handleBossPhase()
+            dodgeLightning2()
+            managePlayer()
+            manageBuffs()
         elseif isTimeToLoot and not isLooted then
             handleBossLoot()
         elseif isLooted then
