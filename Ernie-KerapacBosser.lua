@@ -16,7 +16,9 @@ local foodItems = {
     "1/3 green blubber jellyfish", "1/3 blue blubber jellyfish", 
     "Potato with cheese", "Tuna potato", "Baron shark", "Juju gumbo", 
     "Great maki", "Great gunkan", "Rocktail soup", "Sailfish soup", 
-    "Fury shark", "Primal feast"
+    "Fury shark", "Primal feast",
+    "Guthix rest flask (6)", "Guthix rest flask (5)", "Guthix rest flask (4)", "Guthix rest flask (3)", "Guthix rest flask (2)", "Guthix rest flask (1)",
+    "Saradomin brew flask (6)", "Saradomin brew flask (5)", "Saradomin brew flask (4)", "Saradomin brew flask (3)", "Saradomin brew flask (2)", "Saradomin brew flask (1)"
 }
 
 local prayerRestoreItems = {
