@@ -1,4 +1,4 @@
-local version = "4.2"
+local version = "4.5"
 local API = require("api")
 API.SetDrawLogs(true)
 
@@ -329,26 +329,12 @@ local centerOfArenaPosition = nil
 
 local kerapacPhase = 1
 
-local avoidLightningTicks = API.Get_tick()
 local eatFoodTicks = API.Get_tick()
 local drinkRestoreTicks = API.Get_tick()
 local buffCheckCooldown = API.Get_tick()
 
-local previousStrikes = {}
-local currentStrikes = {}
-local movementVector = {x = 0, y = 0}
-local dodgeDistance = -8
-local lastDodgeTime = 0
-local dodgeCooldown = 6
-local detectionCooldown = 2
-local lastDetectionTime = 0
-local proximityThreshold = 6
-local trackingInitialized = false
-
-local lightningDetectionCooldown = 5
 local hpThreshold = 70
 local prayerThreshold = 30
-local distanceThreshold = 5
 local foodCooldown = 3
 local drinkCooldown = 3
 local phaseTransitionThreshold = 50000
@@ -518,257 +504,6 @@ function getBossStateFromAnimation(animation)
         end
     end
     return nil
-end
-
-function resetLightningTracker()
-    previousStrikes = {}
-    currentStrikes = {}
-    movementVector = {x = 0, y = 0}
-    trackingInitialized = false
-    log("Lightning tracker reset")
-end
-
-function detectLightning()
-    if API.Get_tick() - lastDetectionTime < detectionCooldown then
-        return false
-    end
-    
-    if #currentStrikes > 0 then
-        previousStrikes = {}
-        for _, strike in ipairs(currentStrikes) do
-            table.insert(previousStrikes, {x = strike.x, y = strike.y})
-        end
-    end
-    
-    currentStrikes = {}
-    
-    local lightningMarkers = API.GetAllObjArray1({9216, 28071}, 35, {1})
-    
-    if #lightningMarkers == 0 then
-        lastDetectionTime = API.Get_tick()
-        return false
-    end
-    
-    for _, marker in ipairs(lightningMarkers) do
-        local markerPos = marker.Tile_XYZ
-        if markerPos then
-            table.insert(currentStrikes, {x = markerPos.x, y = markerPos.y})
-        end
-    end
-    
-    if #previousStrikes > 0 and #currentStrikes > 0 then
-        calculateMovement()
-    end
-    
-    lastDetectionTime = API.Get_tick()
-    return #currentStrikes > 0
-end
-
-function calculateMovement()
-    if #previousStrikes < 3 or #currentStrikes < 3 then
-        return
-    end
-    
-    local prevAvgX, prevAvgY = 0, 0
-    local currAvgX, currAvgY = 0, 0
-    
-    for _, strike in ipairs(previousStrikes) do
-        prevAvgX = prevAvgX + strike.x
-        prevAvgY = prevAvgY + strike.y
-    end
-    prevAvgX = prevAvgX / #previousStrikes
-    prevAvgY = prevAvgY / #previousStrikes
-    
-    for _, strike in ipairs(currentStrikes) do
-        currAvgX = currAvgX + strike.x
-        currAvgY = currAvgY + strike.y
-    end
-    currAvgX = currAvgX / #currentStrikes
-    currAvgY = currAvgY / #currentStrikes
-    
-    local movementX = currAvgX - prevAvgX
-    local movementY = currAvgY - prevAvgY
-    
-    if math.abs(movementX) < 0.5 and math.abs(movementY) < 0.5 then
-        return
-    end
-    
-    movementVector.x = (movementVector.x * 0.7) + (movementX * 0.3)
-    movementVector.y = (movementVector.y * 0.7) + (movementY * 0.3)
-    
-    
-    trackingInitialized = true
-end
-
-function checkLightningProximity()
-    if #currentStrikes == 0 then
-        return false
-    end
-    
-    local playerPos = API.PlayerCoord()
-    local nearbyLightning = false
-    
-    for _, strike in ipairs(currentStrikes) do
-        local distance = math.sqrt(
-            (strike.x - playerPos.x)^2 + 
-            (strike.y - playerPos.y)^2
-        )
-        
-        if distance <= proximityThreshold then
-            nearbyLightning = true
-            break
-        end
-    end
-    
-    return nearbyLightning
-end
-
-function findLightningHotspot()
-    if #currentStrikes == 0 then
-        return nil
-    end
-    
-    local clusterRadius = 12
-    local hotspot = nil
-    local maxNearbyCount = 0
-    
-    for i, marker1 in ipairs(currentStrikes) do
-        local nearbyCount = 0
-        
-        for j, marker2 in ipairs(currentStrikes) do
-            if i ~= j then
-                local distance = math.sqrt(
-                    (marker1.x - marker2.x)^2 + 
-                    (marker1.y - marker2.y)^2
-                )
-                
-                if distance <= clusterRadius then
-                    nearbyCount = nearbyCount + 1
-                end
-            end
-        end
-        
-        if nearbyCount > maxNearbyCount then
-            maxNearbyCount = nearbyCount
-            hotspot = marker1
-        end
-    end
-    
-    return hotspot, maxNearbyCount
-end
-
-function dodgeLightning()
-    if API.Get_tick() - lastDodgeTime < dodgeCooldown then
-        log("Dodge on cooldown, skipping")
-        return false
-    end
-    
-    local dodgePos = nil
-    local playerPos = API.PlayerCoord()
-    
-    local hotspot, nearbyCount = findLightningHotspot()
-    
-    if hotspot and nearbyCount >= 1 then
-        local vectorX = playerPos.x - hotspot.x
-        local vectorY = playerPos.y - hotspot.y
-        
-        local distance = math.sqrt(vectorX * vectorX + vectorY * vectorY)
-        
-        if distance > 0 then
-            vectorX = vectorX / distance * dodgeDistance * 1.5
-            vectorY = vectorY / distance * dodgeDistance * 1.5
-            
-            dodgePos = FFPOINT.new(
-                playerPos.x + vectorX,
-                playerPos.y + vectorY,
-                0
-            )
-            
-            log("Dodging away from lightning cluster with " .. nearbyCount .. " nearby markers")
-        end
-    elseif trackingInitialized then
-        local moveX = movementVector.x
-        local moveY = math.floor(movementVector.y)
-        
-        local magnitude = math.sqrt(moveX * moveX + moveY * moveY)
-        
-        if magnitude > 0 then
-            moveX = moveX / magnitude
-            moveY = moveY / magnitude
-            
-            dodgePos = FFPOINT.new(
-                playerPos.x - (moveX * dodgeDistance),
-                playerPos.y - (moveY * dodgeDistance),
-                0
-            )
-            
-            log("Dodging lightning based on movement vector: opposite of (" .. 
-                string.format("%.2f", moveX) .. ", " .. 
-                string.format("%.2f", moveY) .. ")")
-        end
-    end
-    
-    if not dodgePos then
-        if centerOfArenaPosition then
-            local vectorX = playerPos.x - centerOfArenaPosition.x
-            local vectorY = playerPos.y - centerOfArenaPosition.y
-            local magnitude = math.sqrt(vectorX * vectorX + vectorY * vectorY)
-            
-            if magnitude > 0 then
-                dodgePos = FFPOINT.new(
-                    playerPos.x + (vectorX / magnitude * dodgeDistance),
-                    playerPos.y + (vectorY / magnitude * dodgeDistance),
-                    0
-                )
-                log("Dodging lightning away from center")
-            else
-                local angle = math.random() * 2 * math.pi
-                dodgePos = FFPOINT.new(
-                    playerPos.x + math.cos(angle) * dodgeDistance,
-                    playerPos.y + math.sin(angle) * dodgeDistance,
-                    0
-                )
-                log("Dodging lightning in random direction")
-            end
-        else
-            dodgePos = FFPOINT.new(
-                playerPos.x - dodgeDistance,
-                playerPos.y - dodgeDistance,
-                0
-            )
-            log("Dodging lightning in default northwest direction")
-        end
-    end
-    
-    if dodgePos then
-        log("EXECUTING DODGE to position: " .. dodgePos.x .. ", " .. dodgePos.y)
-        
-        local safeFFPOINT = FFPOINT.new(dodgePos.x, dodgePos.y, 0)
-        
-        if (BDiveAB.cooldown_timer > 0 or DiveAB.cooldown_timer > 0) or 
-        not (BDiveAB.enabled and not DiveAB.enabled) then
-            API.DoAction_TileF(safeFFPOINT)
-            API.RandomSleep2(1, 120, 0)
-            API.DoAction_Ability_Direct(surgeAB, 1, API.OFF_ACT_GeneralInterface_route)
-        elseif not API.DoAction_Dive_Tile(WPOINT.new(safeFFPOINT.x, safeFFPOINT.y,0)) then
-            API.DoAction_BDive_Tile(WPOINT.new(safeFFPOINT.x, safeFFPOINT.y,0))
-        end
-        
-        lastDodgeTime = API.Get_tick()
-        sleepTickRandom(1)
-        attackKerapac()
-        return true
-    end
-    
-    return false
-end
-
-function updateLightningTracker()
-    local lightningDetected = detectLightning()
-    
-    if lightningDetected and checkLightningProximity() then
-        dodgeLightning()
-    end
 end
 
 function enableMagePray()
@@ -1030,6 +765,8 @@ function attackKerapac()
     API.DoAction_NPC(0x2a, API.OFF_ACT_AttackNPC_route, { getKerapacInformation().Id }, 50)
 end
 
+attackKerapac()
+
 function prepareForBattle()
     log("Restoring prayer at Altar of War")
     API.DoAction_Object1(0x3d, API.OFF_ACT_GeneralObject_route0, { 114748 }, 50)
@@ -1092,10 +829,9 @@ function startEncounter()
     sleepTickRandom(1)
     
     log("Move to spot")
+    enableMagePray()
     API.DoAction_TileF(startLocationOfArena)
     API.WaitUntilMovingEnds(20, 4)
-    enableMagePray()
-    resetLightningTracker()
 end
 
 function checkKerapacExists()
@@ -1110,7 +846,6 @@ end
 
 function startPhaseTransition()
     kerapacPhase = kerapacPhase + 1
-    resetLightningTracker()
     isPhasing = true
     log("Entering Phase " .. kerapacPhase)
 end
@@ -1236,12 +971,13 @@ function handleCombat(state)
         end
         
         if state == bossStateEnum.TEAR_RIFT_ATTACK_COMMENCE.name and not isRiftDodged then
+            local kerapacInfo = getKerapacInformation()
             if getKerapacInformation().Distance < 5 or 
             not (DiveAB.enabled and not BDiveAB.enabled) and 
             not (BDiveAB.cooldown_timer > 0 or DiveAB.cooldown_timer > 0) then
                 API.DoAction_TileF(getKerapacPositionFFPOINT())
-            elseif not API.DoAction_Dive_Tile(WPOINT.new(getKerapacPositionFFPOINT().x, getKerapacPositionFFPOINT().y,0)) then
-                API.DoAction_BDive_Tile(WPOINT.new(getKerapacPositionFFPOINT().x, getKerapacPositionFFPOINT().y,0))
+            elseif not API.DoAction_Dive_Tile(WPOINT.new(kerapacInfo.Tile_XYZ.x, kerapacInfo.Tile_XYZ.y,0)) then
+                API.DoAction_BDive_Tile(WPOINT.new(kerapacInfo.Tile_XYZ.x, kerapacInfo.Tile_XYZ.y,0))
             end
             enableMagePray()
             isRiftDodged = true
@@ -1314,8 +1050,6 @@ function handleBossReset()
     hasInvokeDeath = false
     
     kerapacPhase = 1
-    
-    resetLightningTracker()
     log("Let's go again")
 end
 
@@ -1357,9 +1091,67 @@ function DrawGui()
     HandleButtons()
 end
 
-log("Started Ernie's Kerapac Bosser " .. version)
-API.Write_LoopyLoop(true)
+local avoidLightningTicks = API.Get_tick()
+local dodgeDistance = -10
+local dodgeCooldown = 6
+local distanceThreshold = 6
+local function dodgeLightning()
+    local allLightningObjects = API.GetAllObjArray1({28071, 9216}, 60, {1})
+    local inDanger = false
+    local closestBolt = nil
+    local minDistance = 30
 
+    if #allLightningObjects > 0 then
+        for i = 1, #allLightningObjects do
+            if allLightningObjects[i].Distance < distanceThreshold then
+                inDanger = true
+                if allLightningObjects[i].Distance < minDistance then
+                    minDistance = allLightningObjects[i].Distance
+                    closestBolt = allLightningObjects[i]
+                end
+            end
+        end
+    end
+
+    if inDanger and API.Get_tick() - avoidLightningTicks > dodgeCooldown and closestBolt then
+        local playerPosition = API.PlayerCoord()
+        local dirX = playerPosition.x - closestBolt.Tile_XYZ.x
+        local dirY = playerPosition.y - closestBolt.Tile_XYZ.y
+        local length = math.sqrt(dirX*dirX + dirY*dirY)
+        if length > 0 then
+            dirX = dirX / length
+            dirY = dirY / length
+        else
+            dirX = 1
+            dirY = 0
+        end
+        
+        local safeWPOINT = WPOINT.new(
+            playerPosition.x + (dirX * dodgeDistance),
+            playerPosition.y + (dirY * dodgeDistance),
+            playerPosition.z
+        )
+        
+        local safeFFPOINT = FFPOINT.new(safeWPOINT.x, safeWPOINT.y, 0)
+        local surgeAB = API.GetABs_name("Surge")
+        local BDiveAB = API.GetABs_name("Bladed Dive")
+        local DiveAB = API.GetABs_name("Dive")
+        
+        if (BDiveAB.cooldown_timer > 0 or DiveAB.cooldown_timer > 0) then
+            API.DoAction_TileF(safeFFPOINT)
+            API.RandomSleep2(1, 120, 0)
+            API.DoAction_Ability_Direct(surgeAB, 1, API.OFF_ACT_GeneralInterface_route)
+        elseif not API.DoAction_Dive_Tile(safeWPOINT) then
+            API.DoAction_BDive_Tile(safeWPOINT)
+        end
+        
+        log("Dodged lightning at distance " .. minDistance)
+        avoidLightningTicks = API.Get_tick()
+    end
+end
+
+
+log("Started Ernie's Kerapac Bosser " .. version)
 while (API.Read_LoopyLoop()) do
     if guiVisible then
         DrawGui() 
@@ -1387,9 +1179,9 @@ while (API.Read_LoopyLoop()) do
                 checkKerapacExists()
             end
         elseif isInBattle and API.Read_LoopyLoop() then
+            dodgeLightning()
             managePlayer()
             manageBuffs()
-            updateLightningTracker()
             handleStateChange(getKerapacAnimation())
             handleBossPhase()
         elseif isTimeToLoot and not isLooted and API.Read_LoopyLoop() then
@@ -1399,5 +1191,4 @@ while (API.Read_LoopyLoop()) do
         end
     end
 end
-
 log("Stopped Ernie's Kerapac Bosser " .. version)
