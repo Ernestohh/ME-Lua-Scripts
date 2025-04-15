@@ -1,4 +1,4 @@
-local version = "4.6"
+local version = "4.7"
 local API = require("api")
 API.SetDrawLogs(true)
 
@@ -150,6 +150,8 @@ local extraAbilities = {
     }
 }
 
+
+
 local overheadPrayersBuffs = {
     PrayMage = { 
         name = "Protect from Magic", 
@@ -269,6 +271,33 @@ local overloadBuff = {
     }
 }
 
+local extraBuffs = {
+    scriptureOfJas = {
+        name = "Scripture of Jas", 
+        itemId = 51814,
+        buffId = 182886, 
+        AB = API.GetABs_name("Scripture of Jas")
+    },
+    scriptureOfWen = {
+        name = "Scripture of Wen", 
+        itemId = 52117,
+        buffId = 183189, 
+        AB = API.GetABs_name("Scripture of Wen")
+    },
+    scriptureOfFul = {
+        name = "Scripture of Ful", 
+        itemId = 52494,
+        buffId = 183556, 
+        AB = API.GetABs_name("Scripture of Ful")
+    },
+    scriptureOfAmascut = {
+        name = "Scripture of Amascut", 
+        itemId = 57126,
+        buffId = 188198, 
+        AB = API.GetABs_name("Scripture of Amascut")
+    },
+}
+
 local bossStateEnum = {
     BASIC_ATTACK = { 
         name = "BASIC_ATTACK", 
@@ -330,6 +359,7 @@ local isPortalUsed = false
 local isPhasing = false
 local isMovedToCenter = false
 local islightningPhase = false
+local isScriptureEquipped = false
 
 local hasOverload = false
 local hasWeaponPoison = false
@@ -337,12 +367,14 @@ local hasDebilitate = false
 local hasDevotion = false
 local hasDarkness = false
 local hasInvokeDeath = false
+local hasScriptureBuff = false
 local hasFreedom = false
 local hasAnticipation = false
 
 local playerPosition = nil
 local startLocationOfArena = nil
 local centerOfArenaPosition = nil
+local scripture = nil
 
 local kerapacPhase = 1
 
@@ -502,6 +534,7 @@ function checkAvailableBuffs()
     if invokeDeathOnBar then
         hasInvokeDeath = extraAbilities.invokeDeathAbility.AB.enabled
     end
+    hasScripture()
 end
 
 function playerDied()
@@ -751,6 +784,36 @@ function drinkWeaponPoison()
     drinkRestoreTicks = API.Get_tick()
 end
 
+function hasScripture()
+    if API.Container_Get_s(94,extraBuffs.scriptureOfJas.itemId).item_id > 0 then
+        scripture = (extraBuffs.scriptureOfJas)
+        isScriptureEquipped = true
+    end
+    if API.Container_Get_s(94,extraBuffs.scriptureOfWen.itemId).item_id > 0 then
+        scripture = (extraBuffs.scriptureOfWen)
+        isScriptureEquipped = true
+    end
+    if API.Container_Get_s(94,extraBuffs.scriptureOfFul.itemId).item_id > 0 then
+        scripture = (extraBuffs.scriptureOfFul)
+        isScriptureEquipped = true
+    end
+    if API.Container_Get_s(94,extraBuffs.scriptureOfAmascut.itemId).item_id > 0 then
+        scripture = (extraBuffs.scriptureOfAmascut)
+        isScriptureEquipped = true
+    end
+end
+
+function enableScripture(book)
+    if book.AB.id > 0 and
+    book.AB.enabled and 
+    not API.Buffbar_GetIDstatus(book.buffId).found then
+        API.DoAction_Ability_check(book.name, 1, API.OFF_ACT_GeneralInterface_route, true, true, true)
+        log("Enabling Scripture")
+        hasScriptureBuff = true
+        sleepTickRandom(2)
+    end
+end
+
 function managePlayer()
     eatFood()
     drinkPrayer()
@@ -783,6 +846,10 @@ function manageBuffs()
     
     if hasInvokeDeath then
         useInvokeDeath()
+    end
+
+    if isScriptureEquipped and not hasScriptureBuff then
+        enableScripture(scripture)
     end
     
     buffCheckCooldown = API.Get_tick()
@@ -822,8 +889,8 @@ function prepareForBattle()
     checkAvailableBuffs()
     sleepTickRandom(1)
     
-    log(string.format("Do we have the following buffs: \nOverloads: %s\nWeaponPoison %s\nDebilitate %s\nDevotion %s\nDarkness %s\nInvoke Death %s",
-        hasOverload, hasWeaponPoison, hasDebilitate, hasDevotion, hasDarkness, hasInvokeDeath))
+    log(string.format("Do we have the following buffs: \nOverloads: %s\nWeaponPoison %s\nDebilitate %s\nDevotion %s\nDarkness %s\nInvoke Death %s\nScripture Buff %s",
+        hasOverload, hasWeaponPoison, hasDebilitate, hasDevotion, hasDarkness, hasInvokeDeath, isScriptureEquipped))
     
     if not Inventory:ContainsAny(foodItems) then
         log("No food items in inventory", "WARN")
@@ -1203,6 +1270,7 @@ end
 
 
 log("Started Ernie's Kerapac Bosser " .. version)
+
 while (API.Read_LoopyLoop()) do
     if guiVisible then
         DrawGui() 
