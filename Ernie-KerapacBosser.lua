@@ -1,4 +1,4 @@
-local version = "4.5"
+local version = "4.6"
 local API = require("api")
 API.SetDrawLogs(true)
 
@@ -16,9 +16,7 @@ local foodItems = {
     "1/3 green blubber jellyfish", "1/3 blue blubber jellyfish", 
     "Potato with cheese", "Tuna potato", "Baron shark", "Juju gumbo", 
     "Great maki", "Great gunkan", "Rocktail soup", "Sailfish soup", 
-    "Fury shark", "Primal feast",
-    "Guthix rest flask (6)", "Guthix rest flask (5)", "Guthix rest flask (4)", "Guthix rest flask (3)", "Guthix rest flask (2)", "Guthix rest flask (1)",
-    "Saradomin brew flask (6)", "Saradomin brew flask (5)", "Saradomin brew flask (4)", "Saradomin brew flask (3)", "Saradomin brew flask (2)", "Saradomin brew flask (1)"
+    "Fury shark", "Primal feast"
 }
 
 local prayerRestoreItems = {
@@ -136,6 +134,18 @@ local extraAbilities = {
         name = "Invoke Death", 
         debuffId = 30100, 
         AB = API.GetABs_name("Invoke Death"), 
+        threshold = 0
+    },
+    freedomAbility = {
+        name = "Freedom", 
+        buffId = 14220, 
+        AB = API.GetABs_name("Freedom"), 
+        threshold = 0
+    },
+    anticipationAbility = {
+        name = "Anticipation", 
+        buffId = 14219, 
+        AB = API.GetABs_name("Anticipation"), 
         threshold = 0
     }
 }
@@ -302,6 +312,8 @@ local startScript = false
 local guiVisible = true
 local selectedPrayerType = API.VB_FindPSettinOrder(3277, 0).state & 1
 local selectedPassive = nil
+local bound = 26020
+local stun = 26040
 
 local currentState = nil
 local overheadTable = nil
@@ -317,6 +329,7 @@ local isLooted = false
 local isPortalUsed = false
 local isPhasing = false
 local isMovedToCenter = false
+local islightningPhase = false
 
 local hasOverload = false
 local hasWeaponPoison = false
@@ -324,6 +337,8 @@ local hasDebilitate = false
 local hasDevotion = false
 local hasDarkness = false
 local hasInvokeDeath = false
+local hasFreedom = false
+local hasAnticipation = false
 
 local playerPosition = nil
 local startLocationOfArena = nil
@@ -668,6 +683,32 @@ function useDebilitateAbility()
     end
 end
 
+function useFreedomAbility()
+    if extraAbilities.freedomAbility.AB.id > 0 and
+        extraAbilities.freedomAbility.AB.enabled and 
+        not API.Buffbar_GetIDstatus(extraAbilities.freedomAbility.buffId).found then
+        API.DoAction_Ability_check(extraAbilities.freedomAbility.name, 1, API.OFF_ACT_GeneralInterface_route, true, true, true)
+        log("Freeing myself from this blasphemy")
+        sleepTickRandom(2)
+    end
+end
+
+function useAnticipationAbility()
+    if extraAbilities.anticipationAbility.AB.id > 0 and
+        extraAbilities.anticipationAbility.AB.enabled and 
+        not API.Buffbar_GetIDstatus(extraAbilities.anticipationAbility.buffId).found then
+        API.DoAction_Ability_check(extraAbilities.anticipationAbility.name, 1, API.OFF_ACT_GeneralInterface_route, true, true, true)
+        log("Anticipating the worst")
+        sleepTickRandom(2)
+    end
+end
+
+function checkForStun()
+    if API.DeBuffbar_GetIDstatus(stun).found then
+        useFreedomAbility()
+    end
+end
+
 function eatFood()
     if not Inventory:ContainsAny(foodItems) or 
     API.GetHPrecent() >= hpThreshold or 
@@ -973,6 +1014,9 @@ function handleCombat(state)
         end
         
         if state == bossStateEnum.TEAR_RIFT_ATTACK_COMMENCE.name and not isRiftDodged then
+            if islightningPhase then
+                islightningPhase = false
+            end
             local kerapacInfo = getKerapacInformation()
             if getKerapacInformation().Distance < 5 or 
             not (DiveAB.enabled and not BDiveAB.enabled) and 
@@ -1017,6 +1061,7 @@ function handleCombat(state)
         end
         
         if state == bossStateEnum.JUMP_ATTACK_LANDED.name and getKerapacInformation().Distance < 4 then
+            checkForStun()
             enableMeleePray()
             API.DoAction_TileF(centerOfArenaPosition)
             sleepTickRandom(1)
@@ -1026,6 +1071,10 @@ function handleCombat(state)
             sleepTickRandom(1)
             
             attackKerapac()
+        end
+
+        if state == bossStateEnum.LIGHTNING_ATTACK.name and not islightningPhase then
+            islightningPhase = true
         end
     end
 end
@@ -1181,7 +1230,9 @@ while (API.Read_LoopyLoop()) do
                 checkKerapacExists()
             end
         elseif isInBattle and API.Read_LoopyLoop() then
-            dodgeLightning()
+            if islightningPhase then
+                dodgeLightning()
+            end
             managePlayer()
             manageBuffs()
             handleStateChange(getKerapacAnimation())
