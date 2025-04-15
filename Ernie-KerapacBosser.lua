@@ -1,4 +1,4 @@
-local version = "4.8"
+local version = "4.9"
 local API = require("api")
 API.SetDrawLogs(true)
 
@@ -711,7 +711,8 @@ end
 
 function checkForStun()
     if API.DeBuffbar_GetIDstatus(stun).found then
-        useFreedomAbility()
+        TeleportToWars()
+        handleBossReset()
     end
 end
 
@@ -1132,6 +1133,7 @@ function handleBossReset()
     isPortalUsed = false
     isPhasing = false
     isMovedToCenter = false
+    islightningPhase = false
     
     hasOverload = false
     hasWeaponPoison = false
