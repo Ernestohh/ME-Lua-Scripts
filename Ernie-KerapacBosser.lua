@@ -1,4 +1,4 @@
-local version = "4.9"
+local version = "5.0"
 local API = require("api")
 API.SetDrawLogs(true)
 
@@ -311,11 +311,11 @@ end
 table.sort(sortedPassiveKeys)
 
 local startScript = false
+local isResetting = false
 local guiVisible = true
 local selectedPrayerType = API.VB_FindPSettinOrder(3277, 0).state & 1
 local selectedPassive = nil
-local bound = 26020
-local stun = 26040
+local stun = 26103
 
 local currentState = nil
 local overheadTable = nil
@@ -711,7 +711,11 @@ end
 
 function checkForStun()
     if API.DeBuffbar_GetIDstatus(stun).found then
-        TeleportToWars()
+        log("I am stunned")
+        useFreedomAbility()
+        warsTeleport()
+        disableMagePray()
+        disablePassivePrayer()
         handleBossReset()
     end
 end
@@ -1106,11 +1110,6 @@ function handleCombat(state)
             enableMeleePray()
             API.DoAction_TileF(centerOfArenaPosition)
             sleepTickRandom(1)
-            
-            local surgeAB = API.GetABs_name("Surge")
-            API.DoAction_Ability_Direct(surgeAB, 1, API.OFF_ACT_GeneralInterface_route)
-            sleepTickRandom(1)
-            
             attackKerapac()
         end
 
@@ -1278,8 +1277,8 @@ while (API.Read_LoopyLoop()) do
             end
             managePlayer()
             manageBuffs()
-            handleStateChange(getKerapacAnimation())
             handleBossPhase()
+            handleStateChange(getKerapacAnimation())
         elseif isTimeToLoot and not isLooted and API.Read_LoopyLoop() then
             handleBossLoot()
         elseif isLooted and API.Read_LoopyLoop() then
