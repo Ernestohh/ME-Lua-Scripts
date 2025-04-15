@@ -1,4 +1,4 @@
-local version = "4.7"
+local version = "4.8"
 local API = require("api")
 API.SetDrawLogs(true)
 
@@ -83,31 +83,6 @@ local summoningPouches = {
     "Binding contract (blood reaver)", "Binding contract (hellhound)"
 }
 
-local sortedFoods = {}
-local sortedRestore = {}
-local sortedOverload = {}
-local sortedWeaponPoison = {}
-
-for _, v in ipairs(foodItems) do
-    table.insert(sortedFoods, v)
-end
-table.sort(sortedFoods)
-
-for _, v in ipairs(prayerRestoreItems) do
-    table.insert(sortedRestore, v)
-end
-table.sort(sortedRestore)
-
-for _, v in ipairs(overloadItems) do
-    table.insert(sortedOverload, v)
-end
-table.sort(sortedOverload)
-
-for _, v in ipairs(weaponPoisonItems) do
-    table.insert(sortedWeaponPoison, v)
-end
-table.sort(sortedWeaponPoison)
-
 local surgeAB = API.GetABs_name("Surge")
 local BDiveAB = API.GetABs_name("Bladed Dive")
 local DiveAB = API.GetABs_name("Dive")
@@ -149,8 +124,6 @@ local extraAbilities = {
         threshold = 0
     }
 }
-
-
 
 local overheadPrayersBuffs = {
     PrayMage = { 
@@ -442,10 +415,10 @@ end
 function whichFood()
     local food = ""
     local foundFood = false
-    for i = 1, #sortedFoods do
-        foundFood = Inventory:Contains(sortedFoods[i])
+    for i = 1, #foodItems do
+        foundFood = Inventory:Contains(foodItems[i])
         if foundFood then
-            food = sortedFoods[i]
+            food = foodItems[i]
             break
         end
     end
@@ -455,10 +428,10 @@ end
 function whichPrayerRestore()
     local prayerRestore = ""
     local foundPrayerRestore = false
-    for i = 1, #sortedRestore do
-        foundPrayerRestore = Inventory:Contains(sortedRestore[i])
+    for i = 1, #prayerRestoreItems do
+        foundPrayerRestore = Inventory:Contains(prayerRestoreItems[i])
         if foundPrayerRestore then
-            prayerRestore = sortedRestore[i]
+            prayerRestore = prayerRestoreItems[i]
             break
         end
     end
@@ -468,10 +441,10 @@ end
 function whichOverload()
     local overload = ""
     local foundOverload = false
-    for i = 1, #sortedOverload do
-        foundOverload = Inventory:Contains(sortedOverload[i])
+    for i = 1, #overloadItems do
+        foundOverload = Inventory:Contains(overloadItems[i])
         if foundOverload then
-            overload = sortedOverload[i]
+            overload = overloadItems[i]
             break
         end
     end
@@ -481,10 +454,10 @@ end
 function whichWeaponPoison()
     local weaponPoison = ""
     local foundWeaponPoison = false
-    for i = 1, #sortedWeaponPoison do
-        foundWeaponPoison = Inventory:Contains(sortedWeaponPoison[i])
+    for i = 1, #weaponPoisonItems do
+        foundWeaponPoison = Inventory:Contains(weaponPoisonItems[i])
         if foundWeaponPoison then
-            weaponPoison = sortedWeaponPoison[i]
+            weaponPoison = weaponPoisonItems[i]
             break
         end
     end
